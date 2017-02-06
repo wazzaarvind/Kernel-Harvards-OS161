@@ -147,7 +147,7 @@ lock_create(const char *name)
 	if (lock == NULL) {
 		return NULL;
 	}
-
+	
 	lock->lk_name = kstrdup(name);
 	if (lock->lk_name == NULL) {
 		kfree(lock);
@@ -155,7 +155,10 @@ lock_create(const char *name)
 	}
 
 	// add stuff here as needed
-
+	//Arvind edit
+	spinlock_init(&lock->lk_spinlock);
+	lock->lk_thread=NULL;
+	//wchan_create(lock->lk_thread->t_wchan_name);
 	return lock;
 }
 
@@ -165,7 +168,9 @@ lock_destroy(struct lock *lock)
 	KASSERT(lock != NULL);
 
 	// add stuff here as needed
-
+	
+	//Arvind edit
+	kfree(lock->lk_wchan); 
 	kfree(lock->lk_name);
 	kfree(lock);
 }
@@ -174,7 +179,10 @@ void
 lock_acquire(struct lock *lock)
 {
 	// Write this
-
+	//check waitchannel
+	//check current thread status
+	//then acquire lock
+	//check P()
 	(void)lock;  // suppress warning until code gets written
 }
 
@@ -182,7 +190,9 @@ void
 lock_release(struct lock *lock)
 {
 	// Write this
-
+	//check if you have the lock
+	//if yes, release the lock
+	//check V()
 	(void)lock;
 	 // suppress warning until code gets written
 }
@@ -192,8 +202,9 @@ lock_do_i_hold(struct lock *lock)
 {
 	// Write this
 	(void)lock;
-
-	return true; // dummy until code gets written
+	//Arvind edit
+	return (lock->lk_thread==curthread)
+	//return true; // dummy until code gets written
 }
 
 ////////////////////////////////////////////////////////////
