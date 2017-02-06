@@ -190,8 +190,9 @@ bool
 lock_do_i_hold(struct lock *lock)
 {
 	// Write this
-
-	return false; // dummy until code gets written
+	(void)lock;
+	
+	return true; // dummy until code gets written
 }
 
 ////////////////////////////////////////////////////////////
