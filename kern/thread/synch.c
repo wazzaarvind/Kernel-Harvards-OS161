@@ -183,7 +183,8 @@ lock_release(struct lock *lock)
 {
 	// Write this
 
-	(void)lock;  // suppress warning until code gets written
+	(void)lock;
+	 // suppress warning until code gets written
 }
 
 bool
@@ -191,7 +192,7 @@ lock_do_i_hold(struct lock *lock)
 {
 	// Write this
 	(void)lock;
-	
+
 	return true; // dummy until code gets written
 }
 
