@@ -234,7 +234,7 @@ lock_do_i_hold(struct lock *lock)
 	// Write this
 	//Arvind edit
 
-	KASSERT(lock != NULL);
+	//KASSERT(lock != NULL);
 	return (lock->lk_thread == curthread);
 	//return true; // dummy until code gets written
 }
