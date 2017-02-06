@@ -77,8 +77,9 @@ struct lock {
 
 				// Achuth edit - Adding declarations
 				struct wchan *lk_wchan;
-				volatile struct thread *lk_thread;
+				struct thread *lk_thread;
 				struct spinlock lk_spinlock;
+				volatile unsigned state;  
 
         // add what you need here
         // (don't forget to mark things volatile as needed)

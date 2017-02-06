@@ -160,6 +160,7 @@ lock_create(const char *name)
 	spinlock_init(&lock->lk_spinlock);
 	lock->lk_thread=NULL;
 	lock->lk_wchan = wchan_create(lock->lk_thread->t_wchan_name);
+	lock->state = 0;
 	return lock;
 }
 
@@ -199,12 +200,13 @@ lock_acquire(struct lock *lock)
 
 	spinlock_acquire(&lock->lk_spinlock);
 
-	while(lock->lk_thread != NULL){
+	while(lock->state == 1){
 
 		wchan_sleep(lock->lk_wchan, &lock->lk_spinlock);
 	}
 
 	lock->lk_thread = curthread;
+	lock->state++;
 	//KASSERT(lock->lk_thread != NULL);
 	spinlock_release(&lock->lk_spinlock);
 }
@@ -220,6 +222,8 @@ lock_release(struct lock *lock)
 	KASSERT(lock != NULL);
 
 	spinlock_acquire(&lock->lk_spinlock);
+	lock->state--;
+	KASSERT(lock->state == 0);
 	wchan_wakeone(lock->lk_wchan, &lock->lk_spinlock);
 	spinlock_release(&lock->lk_spinlock);
 }
