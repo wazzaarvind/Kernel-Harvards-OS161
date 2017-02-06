@@ -217,6 +217,11 @@ lock_release(struct lock *lock)
 	//if yes, release the lock
 	//check V()
 
+	KASSERT(lock != NULL);
+
+	spinlock_acquire(&lock->lk_spinlock);
+	wchan_wakeone(lock->lk_wchan, &lock->lk_spinlock);
+	spinlock_release(&lock->lk_spinlock);
 }
 
 bool
