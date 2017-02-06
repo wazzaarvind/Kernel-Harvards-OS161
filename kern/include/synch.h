@@ -74,6 +74,12 @@ void V(struct semaphore *);
  */
 struct lock {
         char *lk_name;
+
+				// Achuth edit - Adding declarations
+				struct wchan *lk_wchan;
+				volatile struct thread *lk_thread;
+				struct spinlock lk_spinlock;
+
         // add what you need here
         // (don't forget to mark things volatile as needed)
 };
@@ -160,7 +166,7 @@ void rwlock_destroy(struct rwlock *);
  * Operations:
  *    rwlock_acquire_read  - Get the lock for reading. Multiple threads can
  *                          hold the lock for reading at the same time.
- *    rwlock_release_read  - Free the lock. 
+ *    rwlock_release_read  - Free the lock.
  *    rwlock_acquire_write - Get the lock for writing. Only one thread can
  *                           hold the write lock at one time.
  *    rwlock_release_write - Free the write lock.

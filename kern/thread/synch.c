@@ -147,8 +147,9 @@ lock_create(const char *name)
 	if (lock == NULL) {
 		return NULL;
 	}
-	
+
 	lock->lk_name = kstrdup(name);
+
 	if (lock->lk_name == NULL) {
 		kfree(lock);
 		return NULL;
@@ -158,7 +159,7 @@ lock_create(const char *name)
 	//Arvind edit
 	spinlock_init(&lock->lk_spinlock);
 	lock->lk_thread=NULL;
-	//wchan_create(lock->lk_thread->t_wchan_name);
+	lock->lk_wchan = wchan_create(lock->lk_thread->t_wchan_name);
 	return lock;
 }
 
@@ -168,9 +169,9 @@ lock_destroy(struct lock *lock)
 	KASSERT(lock != NULL);
 
 	// add stuff here as needed
-	
+
 	//Arvind edit
-	kfree(lock->lk_wchan); 
+	kfree(lock->lk_wchan);
 	kfree(lock->lk_name);
 	kfree(lock);
 }
@@ -183,7 +184,29 @@ lock_acquire(struct lock *lock)
 	//check current thread status
 	//then acquire lock
 	//check P()
-	(void)lock;  // suppress warning until code gets written
+
+	// Achuth edit
+
+	// Check if the lock that is being passed is not null.
+	KASSERT(lock != NULL);
+  // Check if the thread is not in an interrupt
+	KASSERT(curthread->t_in_interrupt == false);
+
+  // Use spin lock to protect the wchan. - HOW?
+  if(lock_do_i_hold(lock)){
+		 return ;
+	}
+
+	spinlock_acquire(&lock->lk_spinlock);
+
+	while(lock->lk_thread != NULL){
+
+		wchan_sleep(lock->lk_wchan, &lock->lk_spinlock);
+	}
+
+	lock->lk_thread = curthread;
+	//KASSERT(lock->lk_thread != NULL);
+	spinlock_release(&lock->lk_spinlock);
 }
 
 void
@@ -193,17 +216,17 @@ lock_release(struct lock *lock)
 	//check if you have the lock
 	//if yes, release the lock
 	//check V()
-	(void)lock;
-	 // suppress warning until code gets written
+
 }
 
 bool
 lock_do_i_hold(struct lock *lock)
 {
 	// Write this
-	(void)lock;
 	//Arvind edit
-	return (lock->lk_thread==curthread)
+
+	KASSERT(lock != NULL);
+	return (lock->lk_thread == curthread);
 	//return true; // dummy until code gets written
 }
 
