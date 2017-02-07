@@ -177,7 +177,8 @@ lock_destroy(struct lock *lock)
 	KASSERT(lock != NULL);
 
 	// add stuff here as needed
-
+	KASSERT(lock->state==0); //Arvind edit
+	KASSERT(lock->lk_thread==NULL);
 	//Arvind edit
 	spinlock_cleanup(&lock->lk_spinlock);
 	wchan_destroy(lock->lk_wchan);
@@ -234,9 +235,12 @@ lock_release(struct lock *lock)
 	//check V()
 
 	KASSERT(lock != NULL);
-
+	//if(lock_do_i_hold(lock)==true)
+	//Arvind edit
+	KASSERT(lock_do_i_hold(lock)==true);
 	spinlock_acquire(&lock->lk_spinlock);
 	KASSERT(lock->state == 0);
+	lock->lk_thread=NULL; //Arvind edit
 	lock->state--;
 	KASSERT(lock->state == 0);
 	wchan_wakeone(lock->lk_wchan, &lock->lk_spinlock);
@@ -252,8 +256,9 @@ lock_do_i_hold(struct lock *lock)
 	if(lock == NULL){
 		return false;
 	}
+	(lock->lk_thread==curthread)?return true:return false; //Arvind edit
 
-	return (lock->lk_thread == curthread);
+	//return (lock->lk_thread == curthread);
 }
 
 ////////////////////////////////////////////////////////////
