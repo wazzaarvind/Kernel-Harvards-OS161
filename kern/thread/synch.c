@@ -158,13 +158,15 @@ lock_create(const char *name)
 	//Arvind edit
 	KASSERT(lock != NULL);
 
-	lock->lk_wchan = wchan_create(lock->lk_thread->t_wchan_name);
+	//lock->lk_wchan = wchan_create(lock->lk_thread->t_wchan_name);
+	lock->lk_wchan=wchan_create("Test 1");
+	kprintf("Test\n");
 	if(lock->lk_wchan == NULL){
 		kfree(lock->lk_name);
 		kfree(lock);
 		return NULL;
 	}
-
+	
 	spinlock_init(&lock->lk_spinlock);
 	lock->lk_thread = NULL;
 	lock->state = 0;
