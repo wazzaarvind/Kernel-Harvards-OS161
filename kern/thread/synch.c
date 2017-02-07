@@ -252,14 +252,14 @@ lock_do_i_hold(struct lock *lock)
 	// Write this
 	//Arvind edit
 
-	if(lock == NULL){
-		return false;
-	}
-	if(lock->lk_thread==curthread)
-		return true;
-	else
-		return false;
-	//return (lock->lk_thread == curthread);
+	// if(lock == NULL){
+	// 	return false;
+	// }
+	// if(lock->lk_thread==curthread)
+	// 	return true;
+	// else
+	// 	return false;
+	return (lock->lk_thread == curthread);
 }
 
 ////////////////////////////////////////////////////////////
