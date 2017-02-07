@@ -158,15 +158,15 @@ lock_create(const char *name)
 	//Arvind edit
 	KASSERT(lock != NULL);
 
-	//lock->lk_wchan = wchan_create(lock->lk_thread->t_wchan_name);
-	lock->lk_wchan=wchan_create("Test 1");
+	lock->lk_wchan = wchan_create(lock->lk_name);
+	//lock->lk_wchan=wchan_create("Test 1");
 	kprintf("Test\n");
 	if(lock->lk_wchan == NULL){
 		kfree(lock->lk_name);
 		kfree(lock);
 		return NULL;
 	}
-	
+
 	spinlock_init(&lock->lk_spinlock);
 	lock->lk_thread = NULL;
 	lock->state = 0;
@@ -201,9 +201,6 @@ lock_acquire(struct lock *lock)
 
 	// Check if the lock that is being passed is not null.
 	//kprintf("%s", lock->lk_thread->t_name);
-	if(lock == NULL){
-		 return;
-	}
 	KASSERT(lock != NULL);
 	//KASSERT(lock->lk_thread != NULL);
 
@@ -224,7 +221,7 @@ lock_acquire(struct lock *lock)
 	}
 	KASSERT(lock->state == 0);
 	lock->lk_thread = curthread;
-	lock->state++;
+	lock->state = 1;
 	spinlock_release(&lock->lk_spinlock);
 }
 
@@ -241,9 +238,9 @@ lock_release(struct lock *lock)
 	//Arvind edit
 	KASSERT(lock_do_i_hold(lock)==true);
 	spinlock_acquire(&lock->lk_spinlock);
-	KASSERT(lock->state == 0);
+	KASSERT(lock->state == 1);
 	lock->lk_thread=NULL; //Arvind edit
-	lock->state--;
+	lock->state = 0;
 	KASSERT(lock->state == 0);
 	wchan_wakeone(lock->lk_wchan, &lock->lk_spinlock);
 	spinlock_release(&lock->lk_spinlock);
