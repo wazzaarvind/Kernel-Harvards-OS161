@@ -124,6 +124,7 @@ struct cv {
 	struct wchan *cv_wchan;
 	struct thread *cv_thread;
 	struct lock *cv_lock;
+	struct spinlock cv_spinlock;
 	// add what you need here
         // (don't forget to mark things volatile as needed)
 };
