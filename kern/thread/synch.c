@@ -69,7 +69,6 @@ sem_create(const char *name, unsigned initial_count)
 
 	spinlock_init(&sem->sem_lock);
 	sem->sem_count = initial_count;
-
 	return sem;
 }
 
@@ -157,9 +156,17 @@ lock_create(const char *name)
 
 	// add stuff here as needed
 	//Arvind edit
-	spinlock_init(&lock->lk_spinlock);
-	lock->lk_thread=NULL;
+	KASSERT(lock != NULL);
+
 	lock->lk_wchan = wchan_create(lock->lk_thread->t_wchan_name);
+	if(lock->lk_wchan == NULL){
+		kfree(lock->lk_name);
+		kfree(lock);
+		return NULL;
+	}
+
+	spinlock_init(&lock->lk_spinlock);
+	lock->lk_thread = NULL;
 	lock->state = 0;
 	return lock;
 }
@@ -172,7 +179,8 @@ lock_destroy(struct lock *lock)
 	// add stuff here as needed
 
 	//Arvind edit
-	kfree(lock->lk_wchan);
+	spinlock_cleanup(&lock->lk_spinlock);
+	wchan_destroy(lock->lk_wchan);
 	kfree(lock->lk_name);
 	kfree(lock);
 }
@@ -189,25 +197,31 @@ lock_acquire(struct lock *lock)
 	// Achuth edit
 
 	// Check if the lock that is being passed is not null.
+	//kprintf("%s", lock->lk_thread->t_name);
+	if(lock == NULL){
+		 return;
+	}
 	KASSERT(lock != NULL);
+	//KASSERT(lock->lk_thread != NULL);
+
   // Check if the thread is not in an interrupt
 	KASSERT(curthread->t_in_interrupt == false);
 
   // Use spin lock to protect the wchan. - HOW?
-  if(lock_do_i_hold(lock)){
-		 return ;
-	}
-
 	spinlock_acquire(&lock->lk_spinlock);
+
+  // if(lock_do_i_hold(lock)){
+	// 	 return ;
+	// }
+
 
 	while(lock->state == 1){
 
 		wchan_sleep(lock->lk_wchan, &lock->lk_spinlock);
 	}
-
+	KASSERT(lock->state == 0);
 	lock->lk_thread = curthread;
 	lock->state++;
-	//KASSERT(lock->lk_thread != NULL);
 	spinlock_release(&lock->lk_spinlock);
 }
 
@@ -222,6 +236,7 @@ lock_release(struct lock *lock)
 	KASSERT(lock != NULL);
 
 	spinlock_acquire(&lock->lk_spinlock);
+	KASSERT(lock->state == 0);
 	lock->state--;
 	KASSERT(lock->state == 0);
 	wchan_wakeone(lock->lk_wchan, &lock->lk_spinlock);
@@ -234,9 +249,11 @@ lock_do_i_hold(struct lock *lock)
 	// Write this
 	//Arvind edit
 
-	//KASSERT(lock != NULL);
+	if(lock == NULL){
+		return false;
+	}
+
 	return (lock->lk_thread == curthread);
-	//return true; // dummy until code gets written
 }
 
 ////////////////////////////////////////////////////////////
