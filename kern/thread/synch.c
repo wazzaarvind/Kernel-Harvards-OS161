@@ -355,3 +355,35 @@ cv_broadcast(struct cv *cv, struct lock *lock)
 	//(void)cv;    // suppress warning until code gets written
 	//(void)lock;  // suppress warning until code gets written
 }
+
+//Arvind edit
+//Read-Write Locks section
+/*struct rwlock * rwlock_create(const char *rw_name)
+{
+	//Add stuff as needed
+}
+
+void rwlock_destroy(struct rwlock *rw_lock)
+{
+	//Add stuff as needed
+}
+
+void rwlock_acquire_read(struct rwlock *rw_lock)
+{
+	//Add stuff as needed
+}
+
+void rwlock_release_read(struct rwlock *rw_lock)
+{
+	//Add stuff as needed
+}
+
+void rwlock_acquire_write(struct rwlock *rw_lock)
+{
+	//Add stuff as needed
+}
+
+void rwlock_release_write(struct rwlock *rw_lock);
+{
+	//Add stuff as needed
+}*/
