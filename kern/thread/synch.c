@@ -163,7 +163,7 @@ lock_create(const char *name)
 		kfree(lock->lk_name);
 		kfree(lock);
 		return NULL;
-	}
+	} //why? - Arvind
 
 	spinlock_init(&lock->lk_spinlock);
 	lock->lk_thread = NULL;
@@ -295,7 +295,8 @@ cv_destroy(struct cv *cv)
 	KASSERT(cv != NULL);
 
 	// add stuff here as needed
-
+	spinlock_cleanup(&cv->cvspinlock);
+	wchan_destroy(cv->cv_wchan);
 	kfree(cv->cv_name);
 	kfree(cv);
 }
