@@ -284,7 +284,12 @@ cv_create(const char *name)
 	// add stuff here as needed
 	KASSERT(cv!=NULL);
 	cv->cv_wchan=wchan_create(cv->cv_name);
-	spinlock_init(&cv->cvspinlock);
+	if(cv->cv_wchan == NULL){
+                kfree(cv->cv_name);
+                kfree(cv);
+                return NULL;
+	}
+	spinlock_init(&cv->cv_spinlock);
 
 	return cv;
 }
@@ -305,8 +310,12 @@ void
 cv_wait(struct cv *cv, struct lock *lock)
 {	
 	//Arvind edit
-	
+	//1.Release Lock 2. Sleep 3. Wake up and reacquire lock	
 	// Write this
+
+	lock_release(lock);
+	wchan_sleep(cv->cv_wchan, &cv->cv_spinlock);
+	lock_acquire(lock);
 	(void)cv;    // suppress warning until code gets written
 	(void)lock;  // suppress warning until code gets written
 }
@@ -314,6 +323,7 @@ cv_wait(struct cv *cv, struct lock *lock)
 void
 cv_signal(struct cv *cv, struct lock *lock)
 {
+	// Wake up one thread sleeping on this CV
 	// Write this
 	(void)cv;    // suppress warning until code gets written
 	(void)lock;  // suppress warning until code gets written
@@ -321,7 +331,8 @@ cv_signal(struct cv *cv, struct lock *lock)
 
 void
 cv_broadcast(struct cv *cv, struct lock *lock)
-{
+{	
+	// Wake up all threads sleeping on this CV
 	// Write this
 	(void)cv;    // suppress warning until code gets written
 	(void)lock;  // suppress warning until code gets written
