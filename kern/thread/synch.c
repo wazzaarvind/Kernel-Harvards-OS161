@@ -312,18 +312,19 @@ cv_wait(struct cv *cv, struct lock *lock)
 	//Arvind edit
 	//1.Release Lock 2. Sleep 3. Wake up and reacquire lock	
 	// Write this
-	//spinlock_release(lock);
+	spinlock_acquire(&cv->cv_spinlock);
 	lock_release(lock); //spinlock?
 	wchan_sleep(cv->cv_wchan, &cv->cv_spinlock);
 	lock_acquire(lock); //spinlock?
-	//spinlock_acquire(lock);
-	(void)cv;    // suppress warning until code gets written
-	(void)lock;  // suppress warning until code gets written
+	spinlock_release(&cv->cv_spinlock);
+	//(void)cv;    // suppress warning until code gets written
+	//(void)lock;  // suppress warning until code gets written
 }
 
 void
 cv_signal(struct cv *cv, struct lock *lock)
 {
+	//spinlock?
 	wchan_wakeone(cv->cv_wchan, &cv->cv_spinlock);
 	// Wake up one thread sleeping on this CV
 	// Write this
@@ -334,6 +335,7 @@ cv_signal(struct cv *cv, struct lock *lock)
 void
 cv_broadcast(struct cv *cv, struct lock *lock)
 {	
+	//spinlock?
 	wchan_wakeall(cv->cv_wchan, &cv->cv_spinlock);
 	// Wake up all threads sleeping on this CV
 	// Write this
