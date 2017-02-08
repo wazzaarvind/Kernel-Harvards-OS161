@@ -300,7 +300,7 @@ cv_destroy(struct cv *cv)
 	KASSERT(cv != NULL);
 
 	// add stuff here as needed
-	spinlock_cleanup(&cv->cvspinlock);
+	spinlock_cleanup(&cv->cv_spinlock);
 	wchan_destroy(cv->cv_wchan);
 	kfree(cv->cv_name);
 	kfree(cv);
