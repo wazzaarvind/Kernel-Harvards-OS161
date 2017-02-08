@@ -282,7 +282,7 @@ cv_create(const char *name)
 	}
 
 	// add stuff here as needed
-	//KASSERT(cv!=NULL);
+	KASSERT(cv!=NULL);
 	cv->cv_wchan=wchan_create(cv->cv_name);
 	if(cv->cv_wchan == NULL){
                 kfree(cv->cv_name);
@@ -297,7 +297,7 @@ cv_create(const char *name)
 void
 cv_destroy(struct cv *cv)
 {
-	KASSERT(cv != NULL);
+	KASSERT(cv!= NULL);
 	//KASSERT(lock_do_i_hold(lock));
 	// add stuff here as needed
 	spinlock_cleanup(&cv->cv_spinlock);
@@ -309,6 +309,7 @@ cv_destroy(struct cv *cv)
 void
 cv_wait(struct cv *cv, struct lock *lock)
 {
+	KASSERT(cv!=NULL);
 	KASSERT(lock!=NULL);
 	//Arvind edit
 	//1.Release Lock 2. Sleep 3. Wake up and reacquire lock
@@ -326,6 +327,7 @@ cv_wait(struct cv *cv, struct lock *lock)
 void
 cv_signal(struct cv *cv, struct lock *lock)
 {
+	KASSERT(cv!=NULL);
 	KASSERT(lock!=NULL);
 	KASSERT(lock_do_i_hold(lock));
 	//spinlock?
@@ -341,6 +343,7 @@ cv_signal(struct cv *cv, struct lock *lock)
 void
 cv_broadcast(struct cv *cv, struct lock *lock)
 {
+	KASSERT(cv!=NULL);
 	KASSERT(lock!=NULL);
 	KASSERT(lock_do_i_hold(lock));
 	//spinlock?
