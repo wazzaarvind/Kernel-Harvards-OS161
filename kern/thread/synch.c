@@ -159,8 +159,6 @@ lock_create(const char *name)
 	KASSERT(lock != NULL);
 
 	lock->lk_wchan = wchan_create(lock->lk_name);
-	//lock->lk_wchan=wchan_create("Test 1");
-	kprintf("Test\n");
 	if(lock->lk_wchan == NULL){
 		kfree(lock->lk_name);
 		kfree(lock);
@@ -284,6 +282,9 @@ cv_create(const char *name)
 	}
 
 	// add stuff here as needed
+	KASSERT(cv!=NULL);
+	cv->cv_wchan=wchan_create(cv->cv_name);
+	spinlock_init(&cv->cvspinlock);
 
 	return cv;
 }
@@ -301,7 +302,9 @@ cv_destroy(struct cv *cv)
 
 void
 cv_wait(struct cv *cv, struct lock *lock)
-{
+{	
+	//Arvind edit
+	
 	// Write this
 	(void)cv;    // suppress warning until code gets written
 	(void)lock;  // suppress warning until code gets written
