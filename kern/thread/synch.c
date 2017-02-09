@@ -392,7 +392,6 @@ void
 rwlock_acquire_read(struct rwlock *rw_lock)
 {
 	//Add stuff as needed
-	spinlock_acquire(&rw_lock->rw_spinlock);
 	lock_acquire(rw_lock->readLock);
 	rw_lock->readCount++;
 	// if readCount is set, acquire write lock too.
@@ -400,39 +399,32 @@ rwlock_acquire_read(struct rwlock *rw_lock)
 		lock_acquire(rw_lock->writeLock);
 	}
 	lock_release(rw_lock->readLock);
-	spinlock_release(&rw_lock->rw_spinlock);
 }
 
 void
 rwlock_release_read(struct rwlock *rw_lock)
 {
 	//Add stuff as needed
-	spinlock_acquire(&rw_lock->rw_spinlock);
 	lock_acquire(rw_lock->readLock);
 	rw_lock->readCount--;
 	if(rw_lock->readCount == 0){
 		lock_release(rw_lock->writeLock);
 	}
 	lock_release(rw_lock->readLock);
-	spinlock_release(&rw_lock->rw_spinlock);
 }
 
 void
 rwlock_acquire_write(struct rwlock *rw_lock)
 {
 	//Add stuff as needed
-	spinlock_acquire(&rw_lock->rw_spinlock);
 	lock_acquire(rw_lock->writeLock);
 	rw_lock->writeCount++;
-	spinlock_release(&rw_lock->rw_spinlock);
 }
 
 void
 rwlock_release_write(struct rwlock *rw_lock)
 {
 	//Add stuff as needed
-	spinlock_acquire(&rw_lock->rw_spinlock);
 	lock_release(rw_lock->writeLock);
 	rw_lock->writeCount--;
-	spinlock_release(&rw_lock->rw_spinlock);
 }

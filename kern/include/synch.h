@@ -159,7 +159,6 @@ void cv_broadcast(struct cv *cv, struct lock *lock);
 
 struct rwlock {
         char *rwlock_name;
-				struct spinlock rw_spinlock;
 				volatile unsigned readCount;
 				volatile unsigned writeCount;
 				struct lock *readLock;
