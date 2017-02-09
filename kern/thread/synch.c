@@ -247,16 +247,6 @@ lock_release(struct lock *lock)
 bool
 lock_do_i_hold(struct lock *lock)
 {
-	// Write this
-	//Arvind edit
-
-	// if(lock == NULL){
-	// 	return false;
-	// }
-	// if(lock->lk_thread==curthread)
-	// 	return true;
-	// else
-	// 	return false;
 	return (lock->lk_thread == curthread);
 }
 
@@ -350,47 +340,99 @@ cv_broadcast(struct cv *cv, struct lock *lock)
 	spinlock_acquire(&cv->cv_spinlock);
 	wchan_wakeall(cv->cv_wchan, &cv->cv_spinlock);
 	spinlock_release(&cv->cv_spinlock);
-	// Wake up all threads sleeping on this CV
-	// Write this
-	//(void)cv;    // suppress warning until code gets written
-	//(void)lock;  // suppress warning until code gets written
+
 }
 
 //Arvind edit
 //Read-Write Locks section
-/*
+
+// CITATION : https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock
 struct rwlock *
 rwlock_create(const char *rw_name)
 {
 	//Add stuff as needed
+	struct rwlock *rwlock;
+
+	rwlock = kmalloc(sizeof(*rwlock));
+
+	if(rwlock == NULL){
+		return NULL;
+	}
+
+	rwlock->rwlock_name = kstrdup(rw_name);
+
+	if(rwlock->rwlock_name== NULL){
+		kfree(rwlock);
+		return NULL;
+	}
+
+	KASSERT(rwlock != NULL);
+
+	spinlock_init(&rwlock->rw_spinlock);
+	rwlock->readCount = 0;
+	rwlock->writeCount = 0;
+	rwlock->readLock = lock_create("rLock");
+	rwlock->writeLock = lock_create("wLock");
+
+	return rwlock;
 }
 
 void
 rwlock_destroy(struct rwlock *rw_lock)
 {
 	//Add stuff as needed
+	KASSERT(rw_lock!=NULL);
+	spinlock_cleanup(&rw_lock->rw_spinlock);
+	kfree(rw_lock->readLock);
+	kfree(rw_lock->writeLock);
+	kfree(rw_lock);
 }
 
 void
 rwlock_acquire_read(struct rwlock *rw_lock)
 {
 	//Add stuff as needed
+	spinlock_acquire(&rw_lock->rw_spinlock);
+	lock_acquire(rw_lock->readLock);
+	rw_lock->readCount++;
+	// if readCount is set, acquire write lock too.
+	if(rw_lock->readCount == 1){
+		lock_acquire(rw_lock->writeLock);
+	}
+	lock_release(rw_lock->readLock);
+	spinlock_release(&rw_lock->rw_spinlock);
 }
 
 void
 rwlock_release_read(struct rwlock *rw_lock)
 {
 	//Add stuff as needed
+	spinlock_acquire(&rw_lock->rw_spinlock);
+	lock_acquire(rw_lock->readLock);
+	rw_lock->readCount--;
+	if(rw_lock->readCount == 0){
+		lock_release(rw_lock->writeLock);
+	}
+	lock_release(rw_lock->readLock);
+	spinlock_release(&rw_lock->rw_spinlock);
 }
 
 void
 rwlock_acquire_write(struct rwlock *rw_lock)
 {
 	//Add stuff as needed
+	spinlock_acquire(&rw_lock->rw_spinlock);
+	lock_acquire(rw_lock->writeLock);
+	rw_lock->writeCount++;
+	spinlock_release(&rw_lock->rw_spinlock);
 }
 
 void
-rwlock_release_write(struct rwlock *rw_lock);
+rwlock_release_write(struct rwlock *rw_lock)
 {
 	//Add stuff as needed
-} *
+	spinlock_acquire(&rw_lock->rw_spinlock);
+	lock_release(rw_lock->writeLock);
+	rw_lock->writeCount--;
+	spinlock_release(&rw_lock->rw_spinlock);
+}
