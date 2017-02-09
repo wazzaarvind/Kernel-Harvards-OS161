@@ -358,32 +358,39 @@ cv_broadcast(struct cv *cv, struct lock *lock)
 
 //Arvind edit
 //Read-Write Locks section
-/*struct rwlock * rwlock_create(const char *rw_name)
+/*
+struct rwlock *
+rwlock_create(const char *rw_name)
 {
 	//Add stuff as needed
 }
 
-void rwlock_destroy(struct rwlock *rw_lock)
+void
+rwlock_destroy(struct rwlock *rw_lock)
 {
 	//Add stuff as needed
 }
 
-void rwlock_acquire_read(struct rwlock *rw_lock)
+void
+rwlock_acquire_read(struct rwlock *rw_lock)
 {
 	//Add stuff as needed
 }
 
-void rwlock_release_read(struct rwlock *rw_lock)
+void
+rwlock_release_read(struct rwlock *rw_lock)
 {
 	//Add stuff as needed
 }
 
-void rwlock_acquire_write(struct rwlock *rw_lock)
+void
+rwlock_acquire_write(struct rwlock *rw_lock)
 {
 	//Add stuff as needed
 }
 
-void rwlock_release_write(struct rwlock *rw_lock);
+void
+rwlock_release_write(struct rwlock *rw_lock);
 {
 	//Add stuff as needed
-}*/
+} *

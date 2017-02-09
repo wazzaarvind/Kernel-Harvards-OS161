@@ -79,7 +79,7 @@ struct lock {
 				struct wchan *lk_wchan;
 				struct thread *lk_thread;
 				struct spinlock lk_spinlock;
-				volatile unsigned state;  
+				volatile unsigned state;
 
         // add what you need here
         // (don't forget to mark things volatile as needed)
@@ -121,10 +121,8 @@ bool lock_do_i_hold(struct lock *);
 struct cv {
         char *cv_name;
         //Arvind edit
-	struct wchan *cv_wchan;
-	struct thread *cv_thread;
-	struct lock *cv_lock;
-	struct spinlock cv_spinlock;
+				struct wchan *cv_wchan;
+				struct spinlock cv_spinlock;
 	// add what you need here
         // (don't forget to mark things volatile as needed)
 };
@@ -161,6 +159,10 @@ void cv_broadcast(struct cv *cv, struct lock *lock);
 
 struct rwlock {
         char *rwlock_name;
+				struct wchan *rw_wchan;
+				struct spinlock rw_spinlock;
+				volatile unsigned readCount;
+
         // add what you need here
         // (don't forget to mark things volatile as needed)
 };
