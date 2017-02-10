@@ -46,12 +46,10 @@
 
 struct semaphore *wm_male_semaphore;
 struct semaphore *wm_female_semaphore;
-struct semaphore *wm_matchmaker_semaphore;
 
 void whalemating_init() {
 	wm_male_semaphore=sem_create("WM MALE SEMAPHORE",0);
 	wm_female_semaphore=sem_create("WM FEMALE SEMAPHORE",0);	
-	wm_matchmaker_semaphore=sem_create("WM MATCHMAKER SEMAPHORE",0);
 	return;
 }
 
@@ -63,7 +61,6 @@ void
 whalemating_cleanup() {
 	sem_destroy(wm_male_semaphore);
 	sem_destroy(wm_female_semaphore);
-	sem_destroy(wm_matchmaker_semaphore);
 	return;
 }
 
