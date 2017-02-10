@@ -347,6 +347,7 @@ cv_broadcast(struct cv *cv, struct lock *lock)
 //Read-Write Locks section
 
 // CITATION https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock
+/*
 struct rwlock *
 rwlock_create(const char *rw_name)
 {
@@ -428,3 +429,4 @@ rwlock_release_write(struct rwlock *rw_lock)
 	lock_release(rw_lock->writeLock);
 	rw_lock->writeCount--;
 }
+*/
