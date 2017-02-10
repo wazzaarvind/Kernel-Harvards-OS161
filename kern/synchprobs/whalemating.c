@@ -48,6 +48,8 @@ struct semaphore *wm_male_semaphore;
 struct semaphore *wm_female_semaphore;
 
 void whalemating_init() {
+	KASSERT(wm_male_semaphore==NULL);
+	KASSERT(wm_female_semaphore==NULL);
 	wm_male_semaphore=sem_create("WM MALE SEMAPHORE",0);
 	wm_female_semaphore=sem_create("WM FEMALE SEMAPHORE",0);	
 	return;
@@ -59,6 +61,8 @@ void whalemating_init() {
 
 void
 whalemating_cleanup() {
+	KASSERT(wm_male_semaphore!=NULL);
+	KASSERT(wm_female_semaphore!=NULL);
 	sem_destroy(wm_male_semaphore);
 	sem_destroy(wm_female_semaphore);
 	return;
@@ -67,6 +71,7 @@ whalemating_cleanup() {
 void
 male(uint32_t index)
 {
+	KASSERT(wm_male_semaphore!=NULL);
 	(void)index;
 	male_start(index);
 	P(wm_male_semaphore);
@@ -81,6 +86,7 @@ male(uint32_t index)
 void
 female(uint32_t index)
 {
+	KASSERT(wm_female_semaphore!=NULL);
 	(void)index;
 	female_start(index);
 	P(wm_female_semaphore);
@@ -96,6 +102,8 @@ female(uint32_t index)
 void
 matchmaker(uint32_t index)
 {
+	KASSERT(wm_male_semaphore!=NULL);
+	KASSERT(wm_female_semaphore!=NULL);
 	(void)index;
 	matchmaker_start(index);
 	V(wm_male_semaphore);
