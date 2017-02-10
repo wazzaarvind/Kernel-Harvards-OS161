@@ -347,7 +347,7 @@ cv_broadcast(struct cv *cv, struct lock *lock)
 //Read-Write Locks section
 
 // CITATION https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock
-/*
+
 struct rwlock *
 rwlock_create(const char *rw_name)
 {
@@ -368,12 +368,13 @@ rwlock_create(const char *rw_name)
 	}
 
 	KASSERT(rwlock != NULL);
+	rwlock->rwlock_sem=sem_create("RWLOCK SEMAPAHORE",10);
 
-	spinlock_init(&rwlock->rw_spinlock);
+	/*spinlock_init(&rwlock->rw_spinlock);
 	rwlock->readCount = 0;
 	rwlock->writeCount = 0;
 	rwlock->readLock = lock_create("rLock");
-	rwlock->writeLock = lock_create("wLock");
+	rwlock->writeLock = lock_create("wLock");*/
 
 	return rwlock;
 }
@@ -383,50 +384,69 @@ rwlock_destroy(struct rwlock *rw_lock)
 {
 	//Add stuff as needed
 	KASSERT(rw_lock!=NULL);
-	spinlock_cleanup(&rw_lock->rw_spinlock);
+	/*spinlock_cleanup(&rw_lock->rw_spinlock);
 	kfree(rw_lock->readLock);
-	kfree(rw_lock->writeLock);
+	kfree(rw_lock->writeLock);*/
+	sem_destroy(rwlock->rwlock_sem);
+	kfree(rwlock->rw_name);
 	kfree(rw_lock);
 }
 
 void
 rwlock_acquire_read(struct rwlock *rw_lock)
-{
+{	
+	P(rwlock->rwlock_sem);
+	rwlock_readcount++;	 //Arvind edit
+
+
 	//Add stuff as needed
-	lock_acquire(rw_lock->readLock);
+	/*lock_acquire(rw_lock->readLock);
 	rw_lock->readCount++;
 	// if readCount is set, acquire write lock too.
 	if(rw_lock->readCount == 1){
 		lock_acquire(rw_lock->writeLock);
 	}
-	lock_release(rw_lock->readLock);
+	lock_release(rw_lock->readLock);*/
 }
 
 void
 rwlock_release_read(struct rwlock *rw_lock)
 {
+	KASSERT(rwlock_readcount<10);
+	V(rwlock->rwlock_sem); //Arvind edit
+
+
 	//Add stuff as needed
-	lock_acquire(rw_lock->readLock);
+	/*lock_acquire(rw_lock->readLock);
 	rw_lock->readCount--;
 	if(rw_lock->readCount == 0){
 		lock_release(rw_lock->writeLock);
 	}
-	lock_release(rw_lock->readLock);
+	lock_release(rw_lock->readLock);*/
 }
 
 void
 rwlock_acquire_write(struct rwlock *rw_lock)
 {
+	int rc=1;
+	while(rc<=10)
+		P(rwlock->rwlock_sem); //Arvind edit
+
+
 	//Add stuff as needed
-	lock_acquire(rw_lock->writeLock);
-	rw_lock->writeCount++;
+	/*lock_acquire(rw_lock->writeLock);
+	rw_lock->writeCount++;*/
 }
 
 void
 rwlock_release_write(struct rwlock *rw_lock)
 {
+	KASSERT(rwlock_readcount==0);
+	V(rwlock->rwlock_sem); //Arvind edit
+
+
 	//Add stuff as needed
-	lock_release(rw_lock->writeLock);
-	rw_lock->writeCount--;
+	/*lock_release(rw_lock->writeLock);
+	rw_lock->writeCount--;*/
 }
-*/
+
