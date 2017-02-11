@@ -112,9 +112,13 @@ gostraight(uint32_t direction, uint32_t index)
 {
 	(void)direction;
 	(void)index;
+	P(sl_sem[direction]);
+	P(sl_sem[(direction+3)%4]);
 	inQuadrant(direction,index);
 	inQuadrant((direction+3)%4,index);
 	leaveIntersection(index);
+	V(sl_sem[direction]);
+        V(sl_sem[(direction+3)%4]);
 	/*
 	 * Implement this function.
 	 */
@@ -125,10 +129,16 @@ turnleft(uint32_t direction, uint32_t index)
 {
 	(void)direction;
 	(void)index;
+	P(sl_sem[direction]);
+        P(sl_sem[(direction+3)%4]);
+	P(sl_sem[(direction+2)%4]);
 	inQuadrant(direction,index);
         inQuadrant((direction+3)%4,index);
         inQuadrant((direction+2)%4,index);
 	leaveIntersection(index);
+	V(sl_sem[direction]);
+        V(sl_sem[(direction+3)%4]);
+        V(sl_sem[(direction+2)%4]);
 	/*
 	 * Implement this function.
 	 */
