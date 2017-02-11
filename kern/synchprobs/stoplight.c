@@ -72,9 +72,15 @@
 /*
  * Called by the driver during initialization.
  */
+struct semaphore *sl_sem[4];
 
 void
 stoplight_init() {
+
+	sl_sem[0]=sem_create("Q0 Semaphore",0);
+	sl_sem[1]=sem_create("Q1 Semaphore",1);
+	sl_sem[2]=sem_create("Q2 Semaphore",2);
+	sl_sem[3]=sem_create("Q3 Semaphore",3);
 	return;
 }
 
@@ -83,6 +89,8 @@ stoplight_init() {
  */
 
 void stoplight_cleanup() {
+	for(int i=0;i<4;i++)
+		sem_destroy(sl_sem[i]);
 	return;
 }
 
@@ -91,6 +99,9 @@ turnright(uint32_t direction, uint32_t index)
 {
 	(void)direction;
 	(void)index;
+	//P(sl_sem[direction]);
+	inQuadrant(direction,index);
+	leaveIntersection(index);
 	/*
 	 * Implement this function.
 	 */
@@ -101,6 +112,9 @@ gostraight(uint32_t direction, uint32_t index)
 {
 	(void)direction;
 	(void)index;
+	inQuadrant(direction,index);
+	inQuadrant((direction+3)%4,index);
+	leaveIntersection(index);
 	/*
 	 * Implement this function.
 	 */
@@ -111,6 +125,10 @@ turnleft(uint32_t direction, uint32_t index)
 {
 	(void)direction;
 	(void)index;
+	inQuadrant(direction,index);
+        inQuadrant((direction+3)%4,index);
+        inQuadrant((direction+2)%4,index);
+	leaveIntersection(index);
 	/*
 	 * Implement this function.
 	 */
