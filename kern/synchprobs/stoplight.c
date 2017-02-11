@@ -78,9 +78,9 @@ void
 stoplight_init() {
 
 	sl_sem[0]=sem_create("Q0 Semaphore",0);
-	sl_sem[1]=sem_create("Q1 Semaphore",1);
-	sl_sem[2]=sem_create("Q2 Semaphore",2);
-	sl_sem[3]=sem_create("Q3 Semaphore",3);
+	sl_sem[1]=sem_create("Q1 Semaphore",0);
+	sl_sem[2]=sem_create("Q2 Semaphore",0);
+	sl_sem[3]=sem_create("Q3 Semaphore",0);
 	return;
 }
 
@@ -99,9 +99,10 @@ turnright(uint32_t direction, uint32_t index)
 {
 	(void)direction;
 	(void)index;
-	//P(sl_sem[direction]);
+	P(sl_sem[direction]);
 	inQuadrant(direction,index);
 	leaveIntersection(index);
+	V(sl_sem[direction]);
 	/*
 	 * Implement this function.
 	 */
