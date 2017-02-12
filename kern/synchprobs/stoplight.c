@@ -98,9 +98,8 @@ void stoplight_cleanup() {
 void
 turnright(uint32_t direction, uint32_t index)
 {
-	
-	(void)direction;
-	(void)index;
+
+
 	//lock_acquire(master_lock);
 	lock_acquire(sl_lock[direction]);
 	inQuadrant(direction,index);
