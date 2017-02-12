@@ -44,7 +44,7 @@
  *
  * As way to think about it, assuming cars drive on the right: a car entering
  * the intersection from direction X will enter intersection quadrant X first.
- * The semantics of the problem are that once a car enters any quadrant it has
+ * The lockantics of the problem are that once a car enters any quadrant it has
  * to be somewhere in the intersection until it call leaveIntersection(),
  * which it should call while in the final quadrant.
  *
@@ -72,15 +72,15 @@
 /*
  * Called by the driver during initialization.
  */
-struct semaphore *sl_sem[4];
-
+struct lock *sl_lock[4];
+struct lock *master_lock;
 void
 stoplight_init() {
-
-	sl_sem[0]=sem_create("Q0 Semaphore",0);
-	sl_sem[1]=sem_create("Q1 Semaphore",0);
-	sl_sem[2]=sem_create("Q2 Semaphore",0);
-	sl_sem[3]=sem_create("Q3 Semaphore",0);
+	master_lock=lock_create("Master lock");
+	sl_lock[0]=lock_create("Q0 lock");
+	sl_lock[1]=lock_create("Q1 lock");
+	sl_lock[2]=lock_create("Q2 lock");
+	sl_lock[3]=lock_create("Q3 lock");
 	return;
 }
 
@@ -90,19 +90,23 @@ stoplight_init() {
 
 void stoplight_cleanup() {
 	for(int i=0;i<4;i++)
-		sem_destroy(sl_sem[i]);
+		lock_destroy(sl_lock[i]);
+	lock_destroy(master_lock);
 	return;
 }
 
 void
 turnright(uint32_t direction, uint32_t index)
 {
+	
 	(void)direction;
 	(void)index;
-	P(sl_sem[direction]);
+	//lock_acquire(master_lock);
+	lock_acquire(sl_lock[direction]);
 	inQuadrant(direction,index);
 	leaveIntersection(index);
-	V(sl_sem[direction]);
+	lock_release(sl_lock[direction]);
+	//lock_release(master_lock);
 	/*
 	 * Implement this function.
 	 */
@@ -113,13 +117,15 @@ gostraight(uint32_t direction, uint32_t index)
 {
 	(void)direction;
 	(void)index;
-	P(sl_sem[direction]);
-	P(sl_sem[(direction+3)%4]);
+	lock_acquire(master_lock);
+	lock_acquire(sl_lock[direction]);
+	lock_acquire(sl_lock[(direction+3)%4]);
 	inQuadrant(direction,index);
 	inQuadrant((direction+3)%4,index);
 	leaveIntersection(index);
-	V(sl_sem[direction]);
-        V(sl_sem[(direction+3)%4]);
+	lock_release(sl_lock[direction]);
+	lock_release(sl_lock[(direction+3)%4]);
+	lock_release(master_lock);
 	/*
 	 * Implement this function.
 	 */
@@ -128,18 +134,20 @@ gostraight(uint32_t direction, uint32_t index)
 void
 turnleft(uint32_t direction, uint32_t index)
 {
+	lock_acquire(master_lock);
 	(void)direction;
 	(void)index;
-	P(sl_sem[direction]);
-        P(sl_sem[(direction+3)%4]);
-	P(sl_sem[(direction+2)%4]);
+	lock_acquire(sl_lock[direction]);
+	lock_acquire(sl_lock[(direction+3)%4]);
+	lock_acquire(sl_lock[(direction+2)%4]);
 	inQuadrant(direction,index);
         inQuadrant((direction+3)%4,index);
         inQuadrant((direction+2)%4,index);
 	leaveIntersection(index);
-	V(sl_sem[direction]);
-        V(sl_sem[(direction+3)%4]);
-        V(sl_sem[(direction+2)%4]);
+	lock_release(sl_lock[direction]);
+	lock_release(sl_lock[(direction+3)%4]);
+        lock_release(sl_lock[(direction+2)%4]);
+	lock_release(master_lock);
 	/*
 	 * Implement this function.
 	 */
