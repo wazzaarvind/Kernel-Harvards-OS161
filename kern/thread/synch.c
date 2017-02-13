@@ -392,14 +392,14 @@ void
 rwlock_destroy(struct rwlock *rw_lock)
 {
 	// //Add stuff as needed
-	// KASSERT(rw_lock!=NULL);
-	// spinlock_cleanup(&rw_lock->rw_spinlock);
-	// kfree(rw_lock->readLock);
-	// kfree(rw_lock->writeLock);
-	// sem_destroy(rwlock->rwlock_sem);
-	// kfree(rwlock->rw_name);
-	// kfree(rw_lock);
-	(void) rw_lock;
+	KASSERT(rw_lock!=NULL);
+	//spinlock_cleanup(&rw_lock->rw_spinlock);
+	kfree(rw_lock->readLock);
+	kfree(rw_lock->writeLock);
+	//sem_destroy(rwlock->rwlock_sem);
+	//kfree(rwlock->rw_name);
+	kfree(rw_lock);
+	//(void) rw_lock;
 }
 
 void
@@ -410,14 +410,14 @@ rwlock_acquire_read(struct rwlock *rw_lock)
 	//
 	//
 	// //Add stuff as needed
-	// lock_acquire(rw_lock->readLock);
-	// rw_lock->readCount++;
-	// // if readCount is set, acquire write lock too.
-	// if(rw_lock->readCount == 1){
-	// 	lock_acquire(rw_lock->writeLock);
-	// }
-	// lock_release(rw_lock->readLock);
-	(void) rw_lock;
+	lock_acquire(rw_lock->readLock);
+	rw_lock->readCount++;
+	// if readCount is set, acquire write lock too.
+	if(rw_lock->readCount == 1){
+		lock_acquire(rw_lock->writeLock);
+	}
+	lock_release(rw_lock->readLock);
+	//(void) rw_lock;
 }
 
 void
@@ -428,13 +428,12 @@ rwlock_release_read(struct rwlock *rw_lock)
 	//
 	//
 	// //Add stuff as needed
-	// lock_acquire(rw_lock->readLock);
-	// rw_lock->readCount--;
-	// if(rw_lock->readCount == 0){
-	// 	lock_release(rw_lock->writeLock);
-	// }
-	// lock_release(rw_lock->readLock);
-	(void) rw_lock;
+	lock_acquire(rw_lock->readLock);
+	rw_lock->readCount--;
+	if(rw_lock->readCount == 0){
+		lock_release(rw_lock->writeLock);
+	}
+	lock_release(rw_lock->readLock);
 }
 
 void
@@ -446,9 +445,8 @@ rwlock_acquire_write(struct rwlock *rw_lock)
 	//
 	//
 	// //Add stuff as needed
-	// lock_acquire(rw_lock->writeLock);
-	// rw_lock->writeCount++;
-	(void) rw_lock;
+	 lock_acquire(rw_lock->writeLock);
+	 rw_lock->writeCount++;
 }
 
 void
@@ -459,7 +457,6 @@ rwlock_release_write(struct rwlock *rw_lock)
 	//
 	//
 	// //Add stuff as needed
-	// lock_release(rw_lock->writeLock);
-	// rw_lock->writeCount--;
-	(void) rw_lock;
+ 	lock_release(rw_lock->writeLock);
+  rw_lock->writeCount--;
 }
