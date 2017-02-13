@@ -163,7 +163,7 @@ struct rwlock {
 				volatile unsigned writeCount;
 				struct lock *readLock;
 				struct lock *writeLock;
-
+				struct lock *rwlock;
         // add what you need here
         // (don't forget to mark things volatile as needed)
 };
