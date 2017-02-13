@@ -377,9 +377,9 @@ rwlock_create(const char *rw_name)
 	}
 
 	KASSERT(rwlock != NULL);
-	rwlock->rwlock_sem=sem_create("RWLOCK SEMAPAHORE",10);
+	//rwlock->rwlock_sem=sem_create("RWLOCK SEMAPAHORE",10);
 
-	spinlock_init(&rwlock->rw_spinlock);
+	//spinlock_init(&rwlock->rw_spinlock);
 	rwlock->readCount = 0;
 	rwlock->writeCount = 0;
 	rwlock->readLock = lock_create("rLock");
@@ -399,7 +399,7 @@ rwlock_destroy(struct rwlock *rw_lock)
 	// sem_destroy(rwlock->rwlock_sem);
 	// kfree(rwlock->rw_name);
 	// kfree(rw_lock);
-	(void) lock;
+	(void) rw_lock;
 }
 
 void
@@ -417,7 +417,7 @@ rwlock_acquire_read(struct rwlock *rw_lock)
 	// 	lock_acquire(rw_lock->writeLock);
 	// }
 	// lock_release(rw_lock->readLock);
-	(void) lock;
+	(void) rw_lock;
 }
 
 void
@@ -434,7 +434,7 @@ rwlock_release_read(struct rwlock *rw_lock)
 	// 	lock_release(rw_lock->writeLock);
 	// }
 	// lock_release(rw_lock->readLock);
-	(void) lock;
+	(void) rw_lock;
 }
 
 void
@@ -448,7 +448,7 @@ rwlock_acquire_write(struct rwlock *rw_lock)
 	// //Add stuff as needed
 	// lock_acquire(rw_lock->writeLock);
 	// rw_lock->writeCount++;
-	(void) lock;
+	(void) rw_lock;
 }
 
 void
@@ -461,5 +461,5 @@ rwlock_release_write(struct rwlock *rw_lock)
 	// //Add stuff as needed
 	// lock_release(rw_lock->writeLock);
 	// rw_lock->writeCount--;
-	(void) lock;
+	(void) rw_lock;
 }
