@@ -154,6 +154,8 @@ lock_create(const char *name)
 		return NULL;
 	}
 
+	HANGMAN_LOCKABLEINIT(&lock->lk_hangman, lock->lk_name);
+
 	// add stuff here as needed
 	//Arvind edit
 	KASSERT(lock != NULL);
@@ -189,6 +191,9 @@ lock_destroy(struct lock *lock)
 void
 lock_acquire(struct lock *lock)
 {
+	/* Call this (atomically) before waiting for a lock */
+	//HANGMAN_WAIT(&curthread->t_hangman, &lock->lk_hangman);
+
 	// Write this
 	//check waitchannel
 	//check current thread status
@@ -212,7 +217,6 @@ lock_acquire(struct lock *lock)
 	// 	 return ;
 	// }
 
-
 	while(lock->state == 1){
 
 		wchan_sleep(lock->lk_wchan, &lock->lk_spinlock);
@@ -221,11 +225,16 @@ lock_acquire(struct lock *lock)
 	lock->lk_thread = curthread;
 	lock->state = 1;
 	spinlock_release(&lock->lk_spinlock);
+	/* Call this (atomically) once the lock is acquired */
+	//HANGMAN_ACQUIRE(&curthread->t_hangman, &lock->lk_hangman);
 }
 
 void
 lock_release(struct lock *lock)
 {
+	/* Call this (atomically) when the lock is released */
+	//HANGMAN_RELEASE(&curthread->t_hangman, &lock->lk_hangman);
+
 	// Write this
 	//check if you have the lock
 	//if yes, release the lock
