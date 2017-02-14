@@ -377,7 +377,8 @@ rwlock_create(const char *rw_name)
 	}
 
 	KASSERT(rwlock != NULL);
-	//rwlock->rwlock_sem=sem_create(rwlock->rwlock_name,0);
+	rwlock->rwlock_sem=sem_create(rwlock->rwlock_name,10);
+	rwlock->glock_sem=sem_create(rwlock->rwlock_name,0);
 	//rwlock->rlock_sem=sem_create("Read Lock",0);
 	//rwlock->wlock_sem=sem_create("Write Lock",0);
 	//spinlock_init(&rwlock->rw_spinlock);
@@ -410,12 +411,20 @@ void
 rwlock_acquire_read(struct rwlock *rw_lock)
 {
 	KASSERT(rw_lock!=NULL);
-	 //P(rw_lock->rwlock_sem);
-	 lock_acquire(rw_lock->readLock);
+	P(rw_lock->glock_sem);
+	 P(rw_lock->rwlock_sem);
+	 V(rw_lock->glock_sem);
+	 rw_lock->readCount++;
+
+	//Start previous work comment
+	 /*lock_acquire(rw_lock->readLock);
 	 rw_lock->readCount++;	 //Arvind edit
 	 if(rw_lock->readCount==1)
 		lock_acquire(rw_lock->rwlock);	
-  	 lock_release(rw_lock->readLock);
+  	 lock_release(rw_lock->readLock);*/
+  	 //End working comment
+
+
 	//
 	//
 	// //Add stuff as needed
@@ -434,9 +443,20 @@ rwlock_release_read(struct rwlock *rw_lock)
 {
 	KASSERT(rw_lock!=NULL);
 	KASSERT(rw_lock->readCount<10);
-	rw_lock->readCount--;
+	V(rw_lock->rwlock_sem);
+
+	//KASSERT(rw_lock->readCount<10);
+
+
+
+	//Start working comment
+	/*rw_lock->readCount--;
 	if(rw_lock->readCount==0)		
-	 lock_release(rw_lock->rwlock); //Arvind edit
+	 lock_release(rw_lock->rwlock); //Arvind edit*/
+	//End working comment
+
+
+
 	//KASSERT(rw_lock->readCount<10);
 	//
 	//
@@ -452,14 +472,26 @@ rwlock_release_read(struct rwlock *rw_lock)
 void
 rwlock_acquire_write(struct rwlock *rw_lock)
 {
+	int i=0;
+	P(rw_lock->glock_sem);
+	while(i<10)
+		P(rw_lock->rwlock_sem);
+
+
+
+	V(rw_lock->glock_sem);
 	//int i=0;
-	lock_acquire(rw_lock->writeLock);
+
+	//Start working comment
+	/*lock_acquire(rw_lock->writeLock);
 	if(rw_lock->writeCount==0)
 		//while(i<10)
 			lock_acquire(rw_lock->readLock);
 	rw_lock->writeCount++;
 	lock_acquire(rw_lock->rwlock);
-	lock_release(rw_lock->writeLock);
+	lock_release(rw_lock->writeLock);*/
+	//End working comment
+
 
 	//KASSERT(	 
 	 //int rc=1;
@@ -475,13 +507,21 @@ rwlock_acquire_write(struct rwlock *rw_lock)
 void
 rwlock_release_write(struct rwlock *rw_lock)
 {
+	int i=0;
 	KASSERT(rw_lock->readCount==0);
+	while(i<10)
+		V(rw_lock->rwlock_sem);
+
+
+	//Start working comment
+	/*KASSERT(rw_lock->readCount==0);
 	lock_release(rw_lock->rwlock);
 	lock_acquire(rw_lock->writeLock);
 	rw_lock->writeCount--;
 	if(rw_lock->writeCount==0)
 		lock_release(rw_lock->readLock);
-	lock_release(rw_lock->writeLock);
+	lock_release(rw_lock->writeLock);*/
+	//End working comment
 
 
 	 //KASSERT(rw_lock->readCount==0);
