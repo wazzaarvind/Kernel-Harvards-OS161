@@ -400,9 +400,9 @@ rwlock_destroy(struct rwlock *rw_lock)
 	//spinlock_cleanup(&rw_lock->rw_spinlock);
 	//kfree(rw_lock->readLock);
 	//kfree(rw_lock->writeLock);
-	sem_destroy(rwlock->rwlock_sem);
-	sem_destroy(rwlock->glock_sem);
-	cv_destroy(rwlock->rwlock_cv);
+	sem_destroy(rw_lock->rwlock_sem);
+	sem_destroy(rw_lock->glock_sem);
+	cv_destroy(rw_lock->rwlock_cv);
 	lock_destroy(rw_lock->rwlock);
 	lock_destroy(rw_lock->readLock);
 	lock_destroy(rw_lock->writeLock);
