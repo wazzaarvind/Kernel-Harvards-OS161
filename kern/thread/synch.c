@@ -452,7 +452,7 @@ rwlock_release_read(struct rwlock *rw_lock)
 void
 rwlock_acquire_write(struct rwlock *rw_lock)
 {
-	int i=0;
+	//int i=0;
 	lock_acquire(rw_lock->writeLock);
 	if(rw_lock->writeCount==0)
 		//while(i<10)
