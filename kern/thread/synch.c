@@ -415,10 +415,12 @@ void
 rwlock_acquire_read(struct rwlock *rw_lock)
 {
 	KASSERT(rw_lock!=NULL);
-	KASSERT(curthread->t_in_interrupt == false);
+	//KASSERT(curthread->t_in_interrupt == false);
 	lock_acquire(rw_lock->rwlock);
-	KASSERT(rw_lock->rwlock->state==true);
-	cv_wait(rw_lock->rwlock_cv,rw_lock->rwlock);
+	P(rw_lock->rwlock_sem);
+	//KASSERT(rw_lock->rwlock->state==true);
+	//cv_wait(rw_lock->rwlock_cv,rw_lock->rwlock);
+
 	lock_release(rw_lock->rwlock);
 	rw_lock->readCount++;
 	
@@ -453,11 +455,11 @@ void
 rwlock_release_read(struct rwlock *rw_lock)
 {
 	KASSERT(rw_lock!=NULL);
-	KASSERT(curthread->t_in_interrupt == false);
-	KASSERT(rw_lock->readCount<30);
-	//V(rw_lock->rwlock_sem);
-	cv_signal(rw_lock->rwlock_cv,rw_lock->rwlock);
-	rw_lock->readCount--;
+	//KASSERT(curthread->t_in_interrupt == false);
+	KASSERT(rw_lock->rwlock_sem->sem_count<10);
+	V(rw_lock->rwlock_sem);
+	//cv_signal(rw_lock->rwlock_cv,rw_lock->rwlock);
+	//rw_lock->readCount--;
 
 	//KASSERT(rw_lock->readCount<10);
 
@@ -487,14 +489,16 @@ void
 rwlock_acquire_write(struct rwlock *rw_lock)
 {
 	KASSERT(rw_lock!=NULL);
-	KASSERT(curthread->t_in_interrupt == false);
+	//KASSERT(curthread->t_in_interrupt == false);
 	int i=0;
 	lock_acquire(rw_lock->rwlock);
-	KASSERT(rw_lock->rwlock->state==true);
+	//KASSERT(rw_lock->rwlock->state==true);
 	
-	while(i<30)
+	while(i<10)
 		{
-			cv_wait(rw_lock->rwlock_cv,rw_lock->rwlock);
+			P(rw_lock->rwlock_sem);
+
+			//cv_wait(rw_lock->rwlock_cv,rw_lock->rwlock);
 			i++;
 		}
 	lock_release(rw_lock->rwlock);
@@ -535,12 +539,14 @@ void
 rwlock_release_write(struct rwlock *rw_lock)
 {
 	KASSERT(rw_lock!=NULL);
-	KASSERT(curthread->t_in_interrupt == false);
+	//KASSERT(curthread->t_in_interrupt == false);
 	int i=0;
-	KASSERT(rw_lock->readCount==0);
-	while(i<30)
+	KASSERT(rw_lock->rwlock_sem->sem_count==0);
+	//KASSERT(rw_lock->readCount==0);
+	while(i<10)
 	{
-		cv_signal(rw_lock->rwlock_cv,rw_lock->rwlock);
+		V(rw_lock->rwlock_sem);
+		//cv_signal(rw_lock->rwlock_cv,rw_lock->rwlock);
 		i++;
 		//V(rw_lock->rwlock_sem);
 	}
