@@ -383,8 +383,6 @@ rwlock_create(const char *rw_name)
 	//rwlock->rlock_sem=sem_create("Read Lock",0);
 	//rwlock->wlock_sem=sem_create("Write Lock",0);
 	//spinlock_init(&rwlock->rw_spinlock);
-	rwlock->readCount = 0;
-	rwlock->writeCount = 0;
 	rwlock->rwlock=lock_create("RWLock");
 	rwlock->readLock = lock_create("rLock");
 	rwlock->writeLock = lock_create("wLock");
@@ -397,9 +395,6 @@ rwlock_destroy(struct rwlock *rw_lock)
 {
 	// //Add stuff as needed
 	KASSERT(rw_lock!=NULL);
-	//spinlock_cleanup(&rw_lock->rw_spinlock);
-	//kfree(rw_lock->readLock);
-	//kfree(rw_lock->writeLock);
 	sem_destroy(rw_lock->rwlock_sem);
 	sem_destroy(rw_lock->glock_sem);
 	cv_destroy(rw_lock->rwlock_cv);
@@ -408,167 +403,58 @@ rwlock_destroy(struct rwlock *rw_lock)
 	lock_destroy(rw_lock->writeLock);
 	kfree(rw_lock->rwlock_name);
 	kfree(rw_lock);
-	//(void) rw_lock;
 }
 
 void
 rwlock_acquire_read(struct rwlock *rw_lock)
 {
 	KASSERT(rw_lock!=NULL);
-	KASSERT(rw_lock->rwlock!=NULL);
-	//KASSERT(curthread->t_in_interrupt == false);
 	lock_acquire(rw_lock->rwlock);
 	P(rw_lock->rwlock_sem);
-	//KASSERT(rw_lock->rwlock->state==true);
-	//cv_wait(rw_lock->rwlock_cv,rw_lock->rwlock);
 
 	lock_release(rw_lock->rwlock);
-	rw_lock->readCount++;
+	//rw_lock->readCount++;
 	
-	/*P(rw_lock->glock_sem);
-	 P(rw_lock->rwlock_sem);
-	 V(rw_lock->glock_sem);
-	 rw_lock->readCount++;*/
-
-	//Start previous work comment
-	 /*lock_acquire(rw_lock->readLock);
-	 rw_lock->readCount++;	 //Arvind edit
-	 if(rw_lock->readCount==1)
-		lock_acquire(rw_lock->rwlock);	
-  	 lock_release(rw_lock->readLock);*/
-  	 //End working comment
-
-
-	//
-	//
-	// //Add stuff as needed
-	/*lock_acquire(rw_lock->readLock);
-	rw_lock->readCount++;
-	// if readCount is set, acquire write lock too.
-	if(rw_lock->readCount == 1){
-		lock_acquire(rw_lock->writeLock);
-	}
-	lock_release(rw_lock->readLock);*/
-	//(void) rw_lock;
 }
 
 void
 rwlock_release_read(struct rwlock *rw_lock)
 {
 	KASSERT(rw_lock!=NULL);
-	//KASSERT(curthread->t_in_interrupt == false);
 	KASSERT(rw_lock->rwlock_sem->sem_count<40);
 	V(rw_lock->rwlock_sem);
-	//cv_signal(rw_lock->rwlock_cv,rw_lock->rwlock);
-	//rw_lock->readCount--;
 
-	//KASSERT(rw_lock->readCount<40);
-
-
-
-	//Start working comment
-	/*rw_lock->readCount--;
-	if(rw_lock->readCount==0)		
-	 lock_release(rw_lock->rwlock); //Arvind edit*/
-	//End working comment
-
-
-
-	//KASSERT(rw_lock->readCount<40);
-	//
-	//
-	// //Add stuff as needed
-	/*lock_acquire(rw_lock->readLock);
-	rw_lock->readCount--;
-	if(rw_lock->readCount == 0){
-		lock_release(rw_lock->writeLock);
-	}
-	lock_release(rw_lock->readLock);*/
 }
 
 void
 rwlock_acquire_write(struct rwlock *rw_lock)
 {
 	KASSERT(rw_lock!=NULL);
-	//KASSERT(curthread->t_in_interrupt == false);
 	int i=0;
 	lock_acquire(rw_lock->rwlock);
-	//KASSERT(rw_lock->rwlock->state==true);
 	
 	while(i<40)
 		{
 			P(rw_lock->rwlock_sem);
-
-			//cv_wait(rw_lock->rwlock_cv,rw_lock->rwlock);
 			i++;
 		}
 	lock_release(rw_lock->rwlock);
 
 
-	/*P(rw_lock->glock_sem);
-	while(i<40)
-		P(rw_lock->rwlock_sem);
-
-
-
-	V(rw_lock->glock_sem);*/
-	//int i=0;
-
-	//Start working comment
-	/*lock_acquire(rw_lock->writeLock);
-	if(rw_lock->writeCount==0)
-		//while(i<40)
-			lock_acquire(rw_lock->readLock);
-	rw_lock->writeCount++;
-	lock_acquire(rw_lock->rwlock);
-	lock_release(rw_lock->writeLock);*/
-	//End working comment
-
-
-	//KASSERT(	 
-	 //int rc=1;
-	 //while(rc<=40)
-	 	//P(rw_lock->rwlock_sem); //Arvind edit
-	//
-	//
-	// //Add stuff as needed
-	 /*lock_acquire(rw_lock->writeLock);
-	 rw_lock->writeCount++;*/
 }
 
 void
 rwlock_release_write(struct rwlock *rw_lock)
 {
 	KASSERT(rw_lock!=NULL);
-	//KASSERT(curthread->t_in_interrupt == false);
 	int i=0;
 	KASSERT(rw_lock->rwlock_sem->sem_count==0);
-	//KASSERT(rw_lock->readCount==0);
 	while(i<40)
 	{
 		V(rw_lock->rwlock_sem);
-		//cv_signal(rw_lock->rwlock_cv,rw_lock->rwlock);
 		i++;
-		//V(rw_lock->rwlock_sem);
 	}
 
 
-	//Start working comment
-	/*KASSERT(rw_lock->readCount==0);
-	lock_release(rw_lock->rwlock);
-	lock_acquire(rw_lock->writeLock);
-	rw_lock->writeCount--;
-	if(rw_lock->writeCount==0)
-		lock_release(rw_lock->readLock);
-	lock_release(rw_lock->writeLock);*/
-	//End working comment
 
-
-	 //KASSERT(rw_lock->readCount==0);
-	 //V(rw_lock->rwlock_sem); //Arvind edit
-	//
-	//
-	// //Add stuff as needed
- 	//lock_release(rw_lock->writeLock);
-  //rw_lock->writeCount--;
 }
