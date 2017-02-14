@@ -353,7 +353,7 @@ cv_broadcast(struct cv *cv, struct lock *lock)
 }
 
 //Arvind edit
-//Read-Write Locks section
+//Read-Write Locks section.
 
 // CITATION https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock
 
