@@ -417,6 +417,7 @@ rwlock_acquire_read(struct rwlock *rw_lock)
 	KASSERT(rw_lock!=NULL);
 	KASSERT(curthread->t_in_interrupt == false);
 	lock_acquire(rw_lock->rwlock);
+	KASSERT(rw_lock->rwlock->state==true);
 	cv_wait(rw_lock->rwlock_cv,rw_lock->rwlock);
 	lock_release(rw_lock->rwlock);
 	rw_lock->readCount++;
@@ -489,6 +490,7 @@ rwlock_acquire_write(struct rwlock *rw_lock)
 	KASSERT(curthread->t_in_interrupt == false);
 	int i=0;
 	lock_acquire(rw_lock->rwlock);
+	KASSERT(rw_lock->rwlock->state==true);
 	
 	while(i<30)
 		{
