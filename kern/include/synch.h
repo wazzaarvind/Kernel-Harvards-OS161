@@ -168,6 +168,7 @@ struct rwlock {
 				struct semaphore *glock_sem;
 				struct semaphore *rlock_sem;
 				struct semaphore *wlock_sem;
+				struct cv *rwlock_cv;
         // add what you need here
         // (don't forget to mark things volatile as needed)
 };
