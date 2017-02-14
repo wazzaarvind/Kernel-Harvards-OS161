@@ -378,7 +378,7 @@ rwlock_create(const char *rw_name)
 
 	KASSERT(rwlock != NULL);
 	rwlock->rwlock_sem=sem_create(rwlock->rwlock_name,40);
-	rwlock->glock_sem=sem_create(rwlock->rwlock_name,0);
+	rwlock->glock_sem=sem_create(rwlock->rwlock_name,1);
 	rwlock->rwlock_cv=cv_create("RW CV");
 	//rwlock->rlock_sem=sem_create("Read Lock",0);
 	//rwlock->wlock_sem=sem_create("Write Lock",0);
