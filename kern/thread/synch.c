@@ -475,7 +475,7 @@ rwlock_acquire_write(struct rwlock *rw_lock)
 void
 rwlock_release_write(struct rwlock *rw_lock)
 {
-	KASSERT(rw_lock->readCount==0)
+	KASSERT(rw_lock->readCount==0);
 	lock_release(rw_lock->rwlock);
 	lock_acquire(rw_lock->writeLock);
 	rw_lock->writeCount--;
