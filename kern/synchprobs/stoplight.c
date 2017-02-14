@@ -74,8 +74,16 @@
  */
 struct lock *sl_lock[4];
 struct lock *master_lock;
+
+struct semaphore *sl_sem[4];
+struct semaphore *master_sem;
 void
 stoplight_init() {
+	master_sem=sem_create("Master Semaphore",1);
+	sl_sem[0]=sem_create("Q0 Semaphore",1);
+	sl_sem[1]=sem_create("Q1 Semaphore",1);
+	sl_sem[2]=sem_create("Q2 Semaphore",1);
+	sl_sem[3]=sem_create("Q3 Semaphore",1);
 	master_lock=lock_create("Master lock");
 	sl_lock[0]=lock_create("Q0 lock");
 	sl_lock[1]=lock_create("Q1 lock");
@@ -90,21 +98,25 @@ stoplight_init() {
 
 void stoplight_cleanup() {
 	for(int i=0;i<4;i++)
-		lock_destroy(sl_lock[i]);
+	{	lock_destroy(sl_lock[i]);
+		sem_destroy(sl_sem[i]);
+	}
 	lock_destroy(master_lock);
+	sem_destroy(master_sem);
 	return;
 }
 
 void
 turnright(uint32_t direction, uint32_t index)
 {
-
+	P(sl_lock[direction]);
 
 	//lock_acquire(master_lock);
-	lock_acquire(sl_lock[direction]);
+	//lock_acquire(sl_lock[direction]);
 	inQuadrant(direction,index);
 	leaveIntersection(index);
-	lock_release(sl_lock[direction]);
+	V(sl_lock[direction]);
+	//lock_release(sl_lock[direction]);
 	//lock_release(master_lock);
 	/*
 	 * Implement this function.
@@ -116,15 +128,24 @@ gostraight(uint32_t direction, uint32_t index)
 {
 	(void)direction;
 	(void)index;
-	lock_acquire(master_lock);
-	lock_acquire(sl_lock[direction]);
-	lock_acquire(sl_lock[(direction+3)%4]);
+	P(master_sem);
+	P(sl_lock[direction]);
+	P(sl_lock[(direction+3)%4]);
+
+
+	//lock_acquire(master_lock);
+	//lock_acquire(sl_lock[direction]);
+	//lock_acquire(sl_lock[(direction+3)%4]);
 	inQuadrant(direction,index);
 	inQuadrant((direction+3)%4,index);
 	leaveIntersection(index);
-	lock_release(sl_lock[direction]);
-	lock_release(sl_lock[(direction+3)%4]);
-	lock_release(master_lock);
+
+        V(sl_lock[direction]);
+        V(sl_lock[(direction+3)%4]);
+	V(master_sem);
+	//lock_release(sl_lock[direction]);
+	//lock_release(sl_lock[(direction+3)%4]);
+	//lock_release(master_lock);
 	/*
 	 * Implement this function.
 	 */
@@ -133,20 +154,38 @@ gostraight(uint32_t direction, uint32_t index)
 void
 turnleft(uint32_t direction, uint32_t index)
 {
-	lock_acquire(master_lock);
+	P(master_sem);
+	//lock_acquire(master_lock);
 	(void)direction;
 	(void)index;
-	lock_acquire(sl_lock[direction]);
-	lock_acquire(sl_lock[(direction+3)%4]);
-	lock_acquire(sl_lock[(direction+2)%4]);
+
+	P(sl_lock[direction]);
+        P(sl_lock[(direction+3)%4]);
+	P(sl_lock[(direction+2)%4]);
+
+	//lock_acquire(sl_lock[direction]);
+	//lock_acquire(sl_lock[(direction+3)%4]);
+	//lock_acquire(sl_lock[(direction+2)%4]);
+
+
 	inQuadrant(direction,index);
         inQuadrant((direction+3)%4,index);
         inQuadrant((direction+2)%4,index);
 	leaveIntersection(index);
-	lock_release(sl_lock[direction]);
-	lock_release(sl_lock[(direction+3)%4]);
-        lock_release(sl_lock[(direction+2)%4]);
-	lock_release(master_lock);
+
+	V(sl_lock[direction]);
+        V(sl_lock[(direction+3)%4]);
+        V(sl_lock[(direction+2)%4]);
+
+
+
+
+	//lock_release(sl_lock[direction]);
+	//lock_release(sl_lock[(direction+3)%4]);
+        //lock_release(sl_lock[(direction+2)%4]);
+
+	V(master_sem);
+	//lock_release(master_lock);
 	/*
 	 * Implement this function.
 	 */
