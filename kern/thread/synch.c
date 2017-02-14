@@ -203,7 +203,6 @@ lock_acquire(struct lock *lock)
 	// Achuth edit
 
 	// Check if the lock that is being passed is not null.
-	//kprintf("%s", lock->lk_thread->t_name);
 	KASSERT(lock != NULL);
 	//KASSERT(lock->lk_thread != NULL);
 
