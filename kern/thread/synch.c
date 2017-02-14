@@ -409,10 +409,12 @@ void
 rwlock_acquire_read(struct rwlock *rw_lock)
 {
 	KASSERT(rw_lock!=NULL);
-	lock_acquire(rw_lock->rwlock);
+	//lock_acquire(rw_lock->rwlock);
+	P(rw_lock->glock_sem);
 	P(rw_lock->rwlock_sem);
+	V(rw_lock->glock_sem);
 
-	lock_release(rw_lock->rwlock);
+	//lock_release(rw_lock->rwlock);
 	//rw_lock->readCount++;
 	
 }
@@ -431,15 +433,15 @@ rwlock_acquire_write(struct rwlock *rw_lock)
 {
 	KASSERT(rw_lock!=NULL);
 	int i=0;
-	lock_acquire(rw_lock->rwlock);
-	
+	//lock_acquire(rw_lock->rwlock);
+	P(rw_lock->glock_sem);
 	while(i<40)
 		{
 			P(rw_lock->rwlock_sem);
 			i++;
 		}
-	lock_release(rw_lock->rwlock);
-
+	//lock_release(rw_lock->rwlock);
+	V(rw_lock->glock_sem);
 
 }
 
