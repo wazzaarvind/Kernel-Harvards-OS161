@@ -415,6 +415,7 @@ void
 rwlock_acquire_read(struct rwlock *rw_lock)
 {
 	KASSERT(rw_lock!=NULL);
+	KASSERT(rw_lock->rwlock!=NULL);
 	//KASSERT(curthread->t_in_interrupt == false);
 	lock_acquire(rw_lock->rwlock);
 	P(rw_lock->rwlock_sem);
