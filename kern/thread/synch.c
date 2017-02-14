@@ -377,7 +377,7 @@ rwlock_create(const char *rw_name)
 	}
 
 	KASSERT(rwlock != NULL);
-	rwlock->rwlock_sem=sem_create(rwlock->rwlock_name,10);
+	rwlock->rwlock_sem=sem_create(rwlock->rwlock_name,25);
 	rwlock->glock_sem=sem_create(rwlock->rwlock_name,0);
 	rwlock->rwlock_cv=cv_create("RW CV");
 	//rwlock->rlock_sem=sem_create("Read Lock",0);
@@ -457,12 +457,12 @@ rwlock_release_read(struct rwlock *rw_lock)
 {
 	KASSERT(rw_lock!=NULL);
 	//KASSERT(curthread->t_in_interrupt == false);
-	KASSERT(rw_lock->rwlock_sem->sem_count<10);
+	KASSERT(rw_lock->rwlock_sem->sem_count<25);
 	V(rw_lock->rwlock_sem);
 	//cv_signal(rw_lock->rwlock_cv,rw_lock->rwlock);
 	//rw_lock->readCount--;
 
-	//KASSERT(rw_lock->readCount<10);
+	//KASSERT(rw_lock->readCount<25);
 
 
 
@@ -474,7 +474,7 @@ rwlock_release_read(struct rwlock *rw_lock)
 
 
 
-	//KASSERT(rw_lock->readCount<10);
+	//KASSERT(rw_lock->readCount<25);
 	//
 	//
 	// //Add stuff as needed
@@ -495,7 +495,7 @@ rwlock_acquire_write(struct rwlock *rw_lock)
 	lock_acquire(rw_lock->rwlock);
 	//KASSERT(rw_lock->rwlock->state==true);
 	
-	while(i<10)
+	while(i<25)
 		{
 			P(rw_lock->rwlock_sem);
 
@@ -506,7 +506,7 @@ rwlock_acquire_write(struct rwlock *rw_lock)
 
 
 	/*P(rw_lock->glock_sem);
-	while(i<10)
+	while(i<25)
 		P(rw_lock->rwlock_sem);
 
 
@@ -517,7 +517,7 @@ rwlock_acquire_write(struct rwlock *rw_lock)
 	//Start working comment
 	/*lock_acquire(rw_lock->writeLock);
 	if(rw_lock->writeCount==0)
-		//while(i<10)
+		//while(i<25)
 			lock_acquire(rw_lock->readLock);
 	rw_lock->writeCount++;
 	lock_acquire(rw_lock->rwlock);
@@ -527,7 +527,7 @@ rwlock_acquire_write(struct rwlock *rw_lock)
 
 	//KASSERT(	 
 	 //int rc=1;
-	 //while(rc<=10)
+	 //while(rc<=25)
 	 	//P(rw_lock->rwlock_sem); //Arvind edit
 	//
 	//
@@ -544,7 +544,7 @@ rwlock_release_write(struct rwlock *rw_lock)
 	int i=0;
 	KASSERT(rw_lock->rwlock_sem->sem_count==0);
 	//KASSERT(rw_lock->readCount==0);
-	while(i<10)
+	while(i<25)
 	{
 		V(rw_lock->rwlock_sem);
 		//cv_signal(rw_lock->rwlock_cv,rw_lock->rwlock);
