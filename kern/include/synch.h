@@ -165,6 +165,8 @@ struct rwlock {
 				struct lock *writeLock;
 				struct lock *rwlock;
 				struct semaphore *rwlock_sem;
+				struct semaphore *rlock_sem;
+				struct semaphore *wlock_sem;
         // add what you need here
         // (don't forget to mark things volatile as needed)
 };

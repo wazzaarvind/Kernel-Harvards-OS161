@@ -377,8 +377,9 @@ rwlock_create(const char *rw_name)
 	}
 
 	KASSERT(rwlock != NULL);
-	rwlock->rwlock_sem=sem_create("RWLOCK SEMAPAHORE",10);
-
+	rwlock->rwlock_sem=sem_create(rwlock->rwlock_name,0);
+	rwlock->rlock_sem=sem_create("Read Lock",0);
+	rwlock->wlock_sem=sem_create("Write Lock",0);
 	//spinlock_init(&rwlock->rw_spinlock);
 	rwlock->readCount = 0;
 	rwlock->writeCount = 0;
@@ -397,6 +398,8 @@ rwlock_destroy(struct rwlock *rw_lock)
 	//kfree(rw_lock->readLock);
 	//kfree(rw_lock->writeLock);
 	sem_destroy(rw_lock->rwlock_sem);
+	sem_destroy(rw_lock->rlock_sem);
+	sem_destroy(rw_lock->wlock_sem);
 	kfree(rw_lock->rwlock_name);
 	kfree(rw_lock);
 	//(void) rw_lock;
@@ -405,8 +408,12 @@ rwlock_destroy(struct rwlock *rw_lock)
 void
 rwlock_acquire_read(struct rwlock *rw_lock)
 {
-	 P(rw_lock->rwlock_sem);
+	 //P(rw_lock->rwlock_sem);
+	 P(rw_lock->rlock_sem);
 	 rw_lock->readCount++;	 //Arvind edit
+	 if(rw_lock->readCount==1)
+		P(rw_lock->rwlock_sem);	
+  	 V(rw_lock->rlock_sem);
 	//
 	//
 	// //Add stuff as needed
@@ -423,7 +430,9 @@ rwlock_acquire_read(struct rwlock *rw_lock)
 void
 rwlock_release_read(struct rwlock *rw_lock)
 {
-	 KASSERT(rw_lock->readCount<10);
+	rw_lock->readCount--;
+	if(rw_lock->readCount==0)		
+	 //KASSERT(rw_lock->readCount<10);
 	 V(rw_lock->rwlock_sem); //Arvind edit
 	//
 	//
@@ -439,9 +448,18 @@ rwlock_release_read(struct rwlock *rw_lock)
 void
 rwlock_acquire_write(struct rwlock *rw_lock)
 {
-	 int rc=1;
-	 while(rc<=10)
-	 	P(rw_lock->rwlock_sem); //Arvind edit
+	
+	P(rw_lock->wlock_sem);
+	if(rw_lock->writeCount==0)
+		P(rw_lock->rlock_sem);
+	rw_lock->writeCount++;
+	P(rw_lock->rwlock_sem);
+	V(rw_lock->wlock_sem);
+
+	//KASSERT(	 
+	 //int rc=1;
+	 //while(rc<=10)
+	 	//P(rw_lock->rwlock_sem); //Arvind edit
 	//
 	//
 	// //Add stuff as needed
@@ -452,8 +470,16 @@ rwlock_acquire_write(struct rwlock *rw_lock)
 void
 rwlock_release_write(struct rwlock *rw_lock)
 {
-	 KASSERT(rw_lock->readCount==0);
-	 V(rw_lock->rwlock_sem); //Arvind edit
+	V(rw_lock->rwlock_sem);
+	P(rw_lock->wlock_sem);
+	rw_lock->writeCount--;
+	if(rw_lock->writeCount==0)
+		V(rw_lock->rlock_sem);
+	V(rw_lock->wlock_sem);
+
+
+	 //KASSERT(rw_lock->readCount==0);
+	 //V(rw_lock->rwlock_sem); //Arvind edit
 	//
 	//
 	// //Add stuff as needed
