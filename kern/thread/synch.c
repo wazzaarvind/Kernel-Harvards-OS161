@@ -243,7 +243,7 @@ lock_release(struct lock *lock)
 	KASSERT(lock != NULL);
 	//if(lock_do_i_hold(lock)==true)
 	//Arvind edit
-	KASSERT(lock_do_i_hold(lock)==true);
+	//KASSERT(lock_do_i_hold(lock)==true);
 	spinlock_acquire(&lock->lk_spinlock);
 	KASSERT(lock->state == 1);
 	lock->lk_thread=NULL; //Arvind edit
