@@ -409,6 +409,7 @@ rwlock_destroy(struct rwlock *rw_lock)
 void
 rwlock_acquire_read(struct rwlock *rw_lock)
 {
+	KASSERT(rw_lock!=NULL);
 	 //P(rw_lock->rwlock_sem);
 	 lock_acquire(rw_lock->readLock);
 	 rw_lock->readCount++;	 //Arvind edit
@@ -431,6 +432,8 @@ rwlock_acquire_read(struct rwlock *rw_lock)
 void
 rwlock_release_read(struct rwlock *rw_lock)
 {
+	KASSERT(rw_lock!=NULL);
+	KASSERT(rw_lock->readCount<10);
 	rw_lock->readCount--;
 	if(rw_lock->readCount==0)		
 	 lock_release(rw_lock->rwlock); //Arvind edit
@@ -449,10 +452,11 @@ rwlock_release_read(struct rwlock *rw_lock)
 void
 rwlock_acquire_write(struct rwlock *rw_lock)
 {
-	
+	int i=0;
 	lock_acquire(rw_lock->writeLock);
 	if(rw_lock->writeCount==0)
-		lock_acquire(rw_lock->readLock);
+		//while(i<10)
+			lock_acquire(rw_lock->readLock);
 	rw_lock->writeCount++;
 	lock_acquire(rw_lock->rwlock);
 	lock_release(rw_lock->writeLock);
@@ -471,6 +475,7 @@ rwlock_acquire_write(struct rwlock *rw_lock)
 void
 rwlock_release_write(struct rwlock *rw_lock)
 {
+	KASSERT(rw_lock->readCount==0)
 	lock_release(rw_lock->rwlock);
 	lock_acquire(rw_lock->writeLock);
 	rw_lock->writeCount--;
