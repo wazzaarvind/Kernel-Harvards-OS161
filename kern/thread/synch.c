@@ -396,8 +396,8 @@ rwlock_destroy(struct rwlock *rw_lock)
 	//spinlock_cleanup(&rw_lock->rw_spinlock);
 	//kfree(rw_lock->readLock);
 	//kfree(rw_lock->writeLock);
-	sem_destroy(rwlock->rwlock_sem);
-	kfree(rwlock->rw_name);
+	sem_destroy(rw_lock->rwlock_sem);
+	kfree(rw_lock->rwlock_name);
 	kfree(rw_lock);
 	//(void) rw_lock;
 }
@@ -405,8 +405,8 @@ rwlock_destroy(struct rwlock *rw_lock)
 void
 rwlock_acquire_read(struct rwlock *rw_lock)
 {
-	 P(rwlock->rwlock_sem);
-	 rwlock_readcount++;	 //Arvind edit
+	 P(rw_lock->rwlock_sem);
+	 rw_lock->readCount++;	 //Arvind edit
 	//
 	//
 	// //Add stuff as needed
@@ -423,8 +423,8 @@ rwlock_acquire_read(struct rwlock *rw_lock)
 void
 rwlock_release_read(struct rwlock *rw_lock)
 {
-	 KASSERT(rwlock_readcount<10);
-	 V(rwlock->rwlock_sem); //Arvind edit
+	 KASSERT(rw_lock->readCount<10);
+	 V(rw_lock->rwlock_sem); //Arvind edit
 	//
 	//
 	// //Add stuff as needed
@@ -441,7 +441,7 @@ rwlock_acquire_write(struct rwlock *rw_lock)
 {
 	 int rc=1;
 	 while(rc<=10)
-	 	P(rwlock->rwlock_sem); //Arvind edit
+	 	P(rw_lock->rwlock_sem); //Arvind edit
 	//
 	//
 	// //Add stuff as needed
@@ -452,8 +452,8 @@ rwlock_acquire_write(struct rwlock *rw_lock)
 void
 rwlock_release_write(struct rwlock *rw_lock)
 {
-	 KASSERT(rwlock_readcount==0);
-	 V(rwlock->rwlock_sem); //Arvind edit
+	 KASSERT(rw_lock->readCount==0);
+	 V(rw_lock->rwlock_sem); //Arvind edit
 	//
 	//
 	// //Add stuff as needed
