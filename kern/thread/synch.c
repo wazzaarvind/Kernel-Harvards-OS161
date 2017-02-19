@@ -407,6 +407,7 @@ rwlock_destroy(struct rwlock *rw_lock)
 void
 rwlock_acquire_read(struct rwlock *rw_lock)
 {
+	// Just acquire the lock for reader and make writers wait
 	KASSERT(rw_lock!=NULL);
 	//lock_acquire(rw_lock->rwlock);
 	P(rw_lock->glock_sem);
@@ -421,6 +422,7 @@ rwlock_acquire_read(struct rwlock *rw_lock)
 void
 rwlock_release_read(struct rwlock *rw_lock)
 {
+	//Just release the read lock to read, only if count is <40
 	KASSERT(rw_lock!=NULL);
 	KASSERT(rw_lock->rwlock_sem->sem_count<40);
 	V(rw_lock->rwlock_sem);
@@ -430,6 +432,7 @@ rwlock_release_read(struct rwlock *rw_lock)
 void
 rwlock_acquire_write(struct rwlock *rw_lock)
 {
+	//Just put all the incoming readers until 40 in sleep, release write lock for writing
 	KASSERT(rw_lock!=NULL);
 	int i=0;
 	//lock_acquire(rw_lock->rwlock);
@@ -447,6 +450,7 @@ rwlock_acquire_write(struct rwlock *rw_lock)
 void
 rwlock_release_write(struct rwlock *rw_lock)
 {
+	//Just release everything
 	KASSERT(rw_lock!=NULL);
 	int i=0;
 	KASSERT(rw_lock->rwlock_sem->sem_count==0);
