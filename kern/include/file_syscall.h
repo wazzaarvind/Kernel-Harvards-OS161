@@ -1,4 +1,3 @@
-#ifndef _FILE_SYSCALL_H_
-#define _FILE_SYSCALL_H_
+#include<types.h>
 
 int sys_write(int fd, const void *buf, size_t buflen, ssize_t *retval);
