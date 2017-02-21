@@ -18,9 +18,9 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
 
 	 if(fd == 1){
 	 	kprintf(buf);
-    kprintf("Value");
-    kprintf("%p\n", buf);
-    kprintf("%p\n", curproc->p_addrspace);
+    //kprintf("Value");
+    //kprintf("%p\n", buf);
+    //kprintf("%p\n", curproc->p_addrspace);
 
 	 }
 	retval=0;
