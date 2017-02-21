@@ -42,6 +42,12 @@ struct addrspace;
 struct thread;
 struct vnode;
 
+// FILE TABLE ADD
+struct filetable {
+
+	char **fd;
+};
+
 /*
  * Process structure.
  *
@@ -63,6 +69,8 @@ struct proc {
 	char *p_name;			/* Name of this process */
 	struct spinlock p_lock;		/* Lock for this structure */
 	unsigned p_numthreads;		/* Number of threads in this process */
+
+	struct filetable *p_ftable;
 
 	/* VM */
 	struct addrspace *p_addrspace;	/* virtual address space */

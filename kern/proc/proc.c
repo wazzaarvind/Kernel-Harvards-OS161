@@ -82,6 +82,16 @@ proc_create(const char *name)
 	/* VFS fields */
 	proc->p_cwd = NULL;
 
+	// FILE TABLE ADD
+	proc->p_ftable = kmalloc(sizeof(struct filetable));
+
+	proc->p_ftable->fd[0] = kstrdup("con:");
+	proc->p_ftable->fd[1] = kstrdup("con:");
+	proc->p_ftable->fd[2] = kstrdup("con:");
+	// FILE TABLE ADD
+
+
+
 	return proc;
 }
 
