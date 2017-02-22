@@ -22,11 +22,11 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
 
   /*Achuth edits : Fetching the stdout file handle and writing to the file.*/
 
-  struct uio *uioWrite;
-  struct iovec *iov;
+  struct uio *uioWrite = kmalloc(sizeof(uioWrite));
+  struct iovec *iov = kmalloc(sizeof(iov));
   struct vnode *outFile;
 
-  memcpy(&curthread->t_proc->filetable[1], &outFile, sizeof(curthread->t_proc->filetable[1]));
+  memcpy(&curproc->filetable[1], &outFile, sizeof(curthread->t_proc->filetable[1]));
 
   iov->iov_ubase = (void *)buf;
   iov->iov_len = size;
@@ -38,6 +38,12 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
   uioWrite->uio_segflg = UIO_USERSPACE;
   uioWrite->uio_rw = UIO_WRITE;
   uioWrite->uio_space = curproc->p_addrspace;
+
+  int err = VOP_WRITE(outFile, uioWrite);
+
+  if(err){
+
+  }
 
   retval++;
 
