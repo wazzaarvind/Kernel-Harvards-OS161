@@ -225,10 +225,10 @@ proc_create_runprogram(const char *name)
 	/*Achuth edit - Enabling the first three file descriptors*/
 	// Init the required file descriptors in file table using vfs_open
 	int check = 0;
-	struct vnode *init = NULL;
-	struct filehandle *stdin = NULL;
-	struct filehandle *stdout = NULL;
-	struct filehandle *stderr = NULL;
+	struct vnode *init = kmalloc(sizeof(init));
+	struct filehandle *stdin = kmalloc(sizeof(stdin));
+	struct filehandle *stdout = kmalloc(sizeof(stdout));
+	struct filehandle *stderr = kmalloc(sizeof(stderr));
 
 	//char *console = "con:";
 

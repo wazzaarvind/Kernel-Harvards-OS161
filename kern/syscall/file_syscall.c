@@ -24,9 +24,9 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
 
   struct uio *uioWrite = kmalloc(sizeof(uioWrite));
   struct iovec *iov = kmalloc(sizeof(iov));
-  struct vnode *outFile;
+  struct vnode *outFile= kmalloc(sizeof(outFile));
 
-  memcpy(&curproc->filetable[1], &outFile, sizeof(curthread->t_proc->filetable[1]));
+  outFile = curproc->filetable[1]->file;
 
   iov->iov_ubase = (void *)buf;
   iov->iov_len = size;
