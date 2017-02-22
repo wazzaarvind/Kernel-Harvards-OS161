@@ -48,6 +48,8 @@
 #include <current.h>
 #include <addrspace.h>
 #include <vnode.h>
+#include <kern/fcntl.h>
+#include <vfs.h>
 
 /*
  * The process for the kernel; this holds all the kernel-only threads.
@@ -82,15 +84,8 @@ proc_create(const char *name)
 	/* VFS fields */
 	proc->p_cwd = NULL;
 
-	// FILE TABLE ADD
-	proc->p_ftable = kmalloc(sizeof(struct filetable));
-
-	proc->p_ftable->fd[0] = kstrdup("con:");
-	proc->p_ftable->fd[1] = kstrdup("con:");
-	proc->p_ftable->fd[2] = kstrdup("con:");
-	// FILE TABLE ADD
-
-
+	///*Achuth edit - allocationg memory for the process table in the initialization*/
+	//proc->p_ftable = kmalloc(sizeof(struct filetable));
 
 	return proc;
 }
@@ -215,7 +210,6 @@ proc_create_runprogram(const char *name)
 	newproc->p_addrspace = NULL;
 
 	/* VFS fields */
-
 	/*
 	 * Lock the current process to copy its current directory.
 	 * (We don't need to lock the new process, though, as we have
@@ -227,6 +221,58 @@ proc_create_runprogram(const char *name)
 		newproc->p_cwd = curproc->p_cwd;
 	}
 	spinlock_release(&curproc->p_lock);
+
+	/*Achuth edit - Enabling the first three file descriptors*/
+	// Init the required file descriptors in file table using vfs_open
+	int check = 0;
+	struct vnode *init = NULL;
+	struct filehandle *stdin = NULL;
+	struct filehandle *stdout = NULL;
+	struct filehandle *stderr = NULL;
+
+	//char *console = "con:";
+
+	for(int i = 0; i < 100; i++){
+		newproc->filetable[i] = NULL;
+	}
+
+	// STDIN insertion :
+	check = vfs_open((char*) "con:", O_RDONLY, 0, &init);
+
+	stdin->file = init;
+	stdin->counter = 0;
+	stdin->offset = 0;
+	stdin->lock = lock_create("STDIN lock");
+
+	newproc->filetable[0] = stdin;
+
+	// STDOUT insertion :
+	check = vfs_open((char*) "con:", O_WRONLY, 0, &init);
+
+	stdout->file = init;
+	stdout->counter = 0;
+	stdout->offset = 0;
+	stdout->lock = lock_create("STDOUT lock");
+
+	if(check){
+		kprintf("Error in STDOUT init : %d", check);
+	}
+
+	newproc->filetable[1] = stdout;
+
+	// STDERR insertion :
+	check = vfs_open((char*) "con:", O_WRONLY, 0, &init);
+
+	stderr->file = init;
+	stderr->counter = 0;
+	stderr->offset = 0;
+	stderr->lock = lock_create("STDERR lock");
+
+	if(check){
+		kprintf("Error in STDOUT init : %d", check);
+	}
+
+	newproc->filetable[2] = stderr;
 
 	return newproc;
 }

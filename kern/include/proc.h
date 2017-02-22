@@ -37,15 +37,21 @@
  */
 
 #include <spinlock.h>
+#include <vnode.h>
+#include <synch.h>
 
 struct addrspace;
 struct thread;
 struct vnode;
 
-// FILE TABLE ADD
-struct filetable {
+/* Achuth edit - FILE TABLE ADD */
+struct filehandle {
 
-	char **fd;
+	struct vnode *file;
+	volatile int counter;
+	int offset;
+	struct lock *lock;
+
 };
 
 /*
@@ -70,7 +76,7 @@ struct proc {
 	struct spinlock p_lock;		/* Lock for this structure */
 	unsigned p_numthreads;		/* Number of threads in this process */
 
-	struct filetable *p_ftable;
+	struct filehandle *filetable[100]; /*Achuth edit - Adding file table to the process structure*/
 
 	/* VM */
 	struct addrspace *p_addrspace;	/* virtual address space */
