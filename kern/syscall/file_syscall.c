@@ -34,7 +34,7 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
 
   uioWrite->uio_iov = iov;
   uioWrite->uio_iovcnt = 1;
-  uioWrite->uio_offset = curproc->filetable[fd]->offset
+  uioWrite->uio_offset = curproc->filetable[fd]->offset;
   uioWrite->uio_resid = size;
   uioWrite->uio_segflg = UIO_USERSPACE;
   uioWrite->uio_rw = UIO_WRITE;
@@ -89,6 +89,10 @@ int sys_read(int fd, void *buf, size_t buflen, ssize_t *retval){
 }
 
 int sys_open(const char *path_file, int flags, mode_t mode, int *retval){
+	
+	if(path_file==NULL)
+		return EFAULT;
+
 }
 
 int sys_close(int fd){
@@ -108,6 +112,21 @@ int sys_close(int fd){
 }
 
 int sys_dup2(int fd_old, int fd_new, int *retval){
+	
+	if(fd_new>OPEN_MAX)
+		return EMFILE;
+	if(fd_old<0||fd_old>OPEN_MAX||fd_new<0||fd_new>OPEN_MAX)
+		return EBADF;
+
+	if(curproc->filetable[fd_old]==NULL)
+		return EBADF;	
+	//lock_acquire
+	if(curproc->filetable[fd_new]!=NULL)
+		sys_close(fd_new); //could cause error, might need to be dealt with
+	curproc->filetable[fd_new]=curproc->filetable[fd_old];
+	curproc->filetable[fd]->counter++;
+	*retval=fd_new;
+	//lock_release
 }
 
 int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos){
