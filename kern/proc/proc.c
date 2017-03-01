@@ -269,7 +269,7 @@ proc_create_runprogram(const char *name)
 	stderr->lock = lock_create("STDERR lock");
 
 	if(check){
-		kprintf("Error in STDOUT init : %d", check);
+		kprintf("Error in STDERR init : %d", check);
 	}
 
 	newproc->filetable[2] = stderr;
