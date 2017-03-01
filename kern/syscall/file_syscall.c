@@ -206,6 +206,8 @@ int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos){
 
 	}
 
+	*new_pos=curproc->filetable[file_index]->offset;
+
 
 
 }
