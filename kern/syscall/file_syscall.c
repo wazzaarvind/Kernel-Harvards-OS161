@@ -108,15 +108,26 @@ int sys_open(const char *path_file, int flags, mode_t mode, int *retval){
 
 	struct vnode *open_vn= kmalloc(sizeof(outFile));
 
-	int check=vfs_open(path_file,flags,mode,open_vn); // or curproc->filetable[index]->file;
+	int check=vfs_open(path_file,flags,mode,open_vn); // or curproc->filetable[index]->file instead of open_vn
 
+	if(check!=0)
+	{
+		curproc->filetable[file_index]=NULL;
+		return check;
+	}
 
 
 	curproc->filetable[file_index]->offset=0;
 
 	if(flags==O_APPEND)
 	{
-		int check1=VOP_STAT(,stats_file)
+		int check1=VOP_STAT(open_vn,stats_file)
+
+		if(check1==0)
+			curproc->filetable[file_index]->offset=stats_file.st_size;
+
+		else
+			return check1;			
 
 		//update offset dependng on append
 		//curproc->filetable[file_index]->offset=
@@ -127,7 +138,7 @@ int sys_open(const char *path_file, int flags, mode_t mode, int *retval){
 	curproc->filetable[file_index]->lock=lock_create(path_file);
 	curproc->filetable[file_index]->file=open_vn;
 	//offset
-	//flags
+	//flags might need to declare in proc.h
 
 	*retval=file_index;
 
@@ -169,11 +180,37 @@ int sys_dup2(int fd_old, int fd_new, int *retval){
   return 0;
 }
 
-/*
+
 int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos){
+
+	struct stat *stats_file;
+	if(fd<0||fd>OPEN_MAX||curproc->filetable[fd]==NULL)
+		return EBADF;
+
+	struct vnode *lseek_vn= kmalloc(sizeof(outFile));
+
+	int check=VOP_ISSEEKABLE(curproc->filetable[file_index]->file);
+	if(check!=0)
+		return ESPIPE:
+
+	if(whence==SEEK_SET)
+		curproc->filetable[file_index]->offset=pos; //might need to change type of offset in proc.h to off_t
+
+	else if(whence==SEEK_CUR)
+		curproc->filetable[file_index]->offset+=pos;
+	else if(whence==SEEK_END)
+	{
+		int check1=VOP_STAT(curproc->filetable[file_index]->file,stats_file);
+		//if(check!=0)
+		curproc->filetable[file_index]->offset=pos+stats_file.st_size
+
+	}
+
+
+
 }
 
-int sys_chdir(const char *path_name){
+/*int sys_chdir(const char *path_name){
 }
 
 int sys__getcwd(char *buf, size_t buflen,int *retval){
