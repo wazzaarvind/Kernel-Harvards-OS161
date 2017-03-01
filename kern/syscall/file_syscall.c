@@ -89,14 +89,50 @@ int sys_read(int fd, void *buf, size_t buflen, ssize_t *retval){
   return 0; 
 }
 
-/*
+
 int sys_open(const char *path_file, int flags, mode_t mode, int *retval){
 
 	if(path_file==NULL)
 		return EFAULT;
 
+	int file_index=3;
+	struct stat *stats_file;
+
+	while(curproc->filetable[file_index]!=NULL)
+		file_index++;
+
+	if(file_index>65)
+		return EINVAL;
+
+	//curproc->filetable[fd]=kmalloc(sizeof(struct)) Do we need to do this?
+
+	struct vnode *open_vn= kmalloc(sizeof(outFile));
+
+	int check=vfs_open(path_file,flags,mode,open_vn); // or curproc->filetable[index]->file;
+
+
+
+	curproc->filetable[file_index]->offset=0;
+
+	if(flags==O_APPEND)
+	{
+		int check1=VOP_STAT(,stats_file)
+
+		//update offset dependng on append
+		//curproc->filetable[file_index]->offset=
+
+	}
+
+	curproc->filetable[file_index]->counter++;
+	curproc->filetable[file_index]->lock=lock_create(path_file);
+	curproc->filetable[file_index]->file=open_vn;
+	//offset
+	//flags
+
+	*retval=file_index;
+
 }
-*/
+
 
 int sys_close(int fd){
 
