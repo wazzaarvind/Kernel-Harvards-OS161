@@ -129,19 +129,13 @@ syscall(struct trapframe *tf)
 		break;
 
 		case SYS_lseek: //have to take 64 bit argument
-		//err = sys_lseek((int)tf->tf_a0,);
 
 		t64 = ((off_t)tf->tf_a2) << 32 | (off_t)tf->tf_a3;
-		err = copyin((const_userptr_t)tf->tf_sp+16, &whence, sizeof(int));
-		if(err!=0)
-			break;
-		else
-		{
+		
 			err = sys_lseek(tf->tf_a0, t64, retval, &retval_second);
 			if(err==0){
 				tf->tf_v1 = retval_second;
-				//retval = retval_second >> 32;
-			}
+			//}
 		}
 		break;
 
