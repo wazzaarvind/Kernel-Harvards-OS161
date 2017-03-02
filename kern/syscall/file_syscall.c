@@ -2,6 +2,7 @@
 #include <types.h>
 #include <uio.h>
 #include <kern/errno.h>
+#include <kern/seek.h>
 #include <kern/syscall.h>
 #include <limits.h>
 #include <lib.h>
@@ -10,7 +11,8 @@
 #include <vfs.h>
 #include <proc.h>
 #include <kern/iovec.h>
-
+#include <kern/fcntl.h>
+#include <kern/stat.h>
 
 int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
 
@@ -90,13 +92,13 @@ int sys_read(int fd, void *buf, size_t buflen, ssize_t *retval){
 }
 
 
-int sys_open(const char *path_file, int flags, mode_t mode, int *retval){
+int sys_open(char *path_file, int flags, mode_t mode, int *retval){
 
 	if(path_file==NULL)
 		return EFAULT;
 
 	int file_index=3;
-	struct stat *stats_file;
+	struct stat *stats_file=kmalloc(sizeof(struct stat));
 
 	while(curproc->filetable[file_index]!=NULL)
 		file_index++;
@@ -106,9 +108,9 @@ int sys_open(const char *path_file, int flags, mode_t mode, int *retval){
 
 	//curproc->filetable[fd]=kmalloc(sizeof(struct)) Do we need to do this?
 
-	struct vnode *open_vn= kmalloc(sizeof(outFile));
+	struct vnode *open_vn= kmalloc(sizeof(open_vn));
 
-	int check=vfs_open(path_file,flags,mode,open_vn); // or curproc->filetable[index]->file instead of open_vn
+	int check=vfs_open(path_file,flags,mode,&open_vn); // or curproc->filetable[index]->file instead of open_vn
 
 	if(check!=0)
 	{
@@ -121,10 +123,10 @@ int sys_open(const char *path_file, int flags, mode_t mode, int *retval){
 
 	if(flags==O_APPEND)
 	{
-		int check1=VOP_STAT(open_vn,stats_file)
+		int check1=VOP_STAT(open_vn,stats_file);
 
 		if(check1==0)
-			curproc->filetable[file_index]->offset=stats_file.st_size;
+			curproc->filetable[file_index]->offset=stats_file->st_size;
 
 		else
 			return check1;			
@@ -141,6 +143,7 @@ int sys_open(const char *path_file, int flags, mode_t mode, int *retval){
 	//flags might need to declare in proc.h
 
 	*retval=file_index;
+	return 0;
 
 }
 
@@ -183,32 +186,33 @@ int sys_dup2(int fd_old, int fd_new, int *retval){
 
 int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos){
 
-	struct stat *stats_file;
+	struct stat *stats_file=kmalloc(sizeof(struct stat));
 	if(fd<0||fd>OPEN_MAX||curproc->filetable[fd]==NULL)
 		return EBADF;
 
-	struct vnode *lseek_vn= kmalloc(sizeof(outFile));
+	struct vnode *lseek_vn= kmalloc(sizeof(lseek_vn));
 
-	int check=VOP_ISSEEKABLE(curproc->filetable[file_index]->file);
+	int check=VOP_ISSEEKABLE(curproc->filetable[fd]->file);
 	if(check!=0)
-		return ESPIPE:
+		return ESPIPE;
 
 	if(whence==SEEK_SET)
-		curproc->filetable[file_index]->offset=pos; //might need to change type of offset in proc.h to off_t
+		curproc->filetable[fd]->offset=pos; //might need to change type of offset in proc.h to off_t
 
 	else if(whence==SEEK_CUR)
-		curproc->filetable[file_index]->offset+=pos;
+		curproc->filetable[fd]->offset+=pos;
 	else if(whence==SEEK_END)
 	{
-		int check1=VOP_STAT(curproc->filetable[file_index]->file,stats_file);
-		//if(check!=0)
-		curproc->filetable[file_index]->offset=pos+stats_file.st_size
-
+		int check1=VOP_STAT(curproc->filetable[fd]->file,stats_file);
+		if(check1==0)
+			curproc->filetable[fd]->offset=pos+stats_file->st_size;
+		else
+			return check1;
 	}
 
-	*new_pos=curproc->filetable[file_index]->offset;
+	*new_pos=curproc->filetable[fd]->offset;
 
-
+	return 0;
 
 }
 
