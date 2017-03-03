@@ -102,6 +102,12 @@ proc_create(const char *name)
 	return proc;
 }
 
+struct proc *
+fork_proc_create(const char *name)
+{
+		return proc_create(name); 
+}
+
 /*
  * Destroy a proc structure.
  *

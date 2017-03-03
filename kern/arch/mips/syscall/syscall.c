@@ -36,6 +36,7 @@
 #include <current.h>
 #include <syscall.h>
 #include <file_syscall.h>
+#include <proc_syscall.h>
 #include <copyinout.h>
 
 /*
@@ -164,9 +165,9 @@ syscall(struct trapframe *tf)
 		// 	err = sys_waitpid((pid_t)tf->tf_a0, (int *)tf->tf_a1, (int)tf->tf_a2, &retval);
 		// break;
 		//
-		// case SYS_fork:
-		// 	err = sys_fork(); //veritfy argument
-		// break;
+		case SYS_fork:
+		 	err = sys_fork(); //veritfy argument
+		break;
 		//
 		// case SYS_execv:
 		// 	err = sys_execv((const char *)tf->tf_a0, (char **)tf->tf_a1, &retval); //unsure if retval required
