@@ -102,10 +102,24 @@ proc_create(const char *name)
 	return proc;
 }
 
+/*Achuth edit - Wrapper around proc create for adding functionality*/
 struct proc *
 fork_proc_create(const char *name)
 {
-		return proc_create(name); 
+	 struct proc *newProc;
+
+	 newProc = proc_create(name);
+
+	 spinlock_acquire(&curproc->p_lock);
+	 if (curproc->p_cwd != NULL) {
+		 VOP_INCREF(curproc->p_cwd);
+		 newProc->p_cwd = curproc->p_cwd;
+	 }
+	 newProc->ppid = curproc->pid;
+	 memcpy(curproc->filetable, newProc->filetable, sizeof(curproc->filetable));
+	 spinlock_release(&curproc->p_lock);
+
+	 return newProc;
 }
 
 /*

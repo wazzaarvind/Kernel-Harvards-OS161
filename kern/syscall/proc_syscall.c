@@ -3,7 +3,9 @@
 
 
 pid_t sys_fork(){
-  pid_t newPid;
+  pid_t newPid = 0;
+
+  //fork_proc_create(); 
 
   return newPid;
 };
