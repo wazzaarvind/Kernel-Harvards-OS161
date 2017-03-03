@@ -55,6 +55,7 @@
  * The process for the kernel; this holds all the kernel-only threads.
  */
 struct proc *kproc;
+struct proc *proctable[4000];
 
 /*
  * Create a proc structure.
@@ -63,6 +64,8 @@ static
 struct proc *
 proc_create(const char *name)
 {
+	/*TODO : Additional fields added in proc.h must be initialized here.*/
+
 	struct proc *proc;
 
 	proc = kmalloc(sizeof(*proc));
@@ -84,8 +87,17 @@ proc_create(const char *name)
 	/* VFS fields */
 	proc->p_cwd = NULL;
 
-	///*Achuth edit - allocationg memory for the process table in the initialization*/
-	//proc->p_ftable = kmalloc(sizeof(struct filetable));
+	/* Achuth Edit - initialization of fields */
+
+	/* TODO : Get a PID for the newly created process, Maybe move to a counter based implementation*/
+	int i = 2;
+	while(proctable[i] != NULL){
+			i++;
+	}
+
+	proc->pid = i;
+	proctable[i] = proc;
+	proc->ppid = -1;
 
 	return proc;
 }
@@ -172,6 +184,10 @@ proc_destroy(struct proc *proc)
 
 	KASSERT(proc->p_numthreads == 0);
 	spinlock_cleanup(&proc->p_lock);
+
+	/* Achuth edit - Remove the process table row */
+	proctable[proc->pid] = NULL;
+
 
 	kfree(proc->p_name);
 	kfree(proc);

@@ -54,6 +54,8 @@ struct filehandle {
 
 };
 
+extern struct proc *proctable[4000];
+
 /*
  * Process structure.
  *
@@ -73,10 +75,20 @@ struct filehandle {
  */
 struct proc {
 	char *p_name;			/* Name of this process */
+
 	struct spinlock p_lock;		/* Lock for this structure */
+
 	unsigned p_numthreads;		/* Number of threads in this process */
 
 	struct filehandle *filetable[100]; /*Achuth edit - Adding file table to the process structure*/
+
+	/*Achuth edit - Adding additional process parameters to the process structure*/
+	pid_t pid;
+	pid_t ppid;
+	//int exit_status; /* 0 - running, 1 - exited */
+	//int exit_code;
+
+	/* TODO: Needs a synchronization premitive for putting this process to sleep during pid_wait */
 
 	/* VM */
 	struct addrspace *p_addrspace;	/* virtual address space */
