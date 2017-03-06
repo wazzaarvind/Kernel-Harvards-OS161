@@ -62,6 +62,8 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
 
   proc_destroy(proctable[pid]);
 
+  *retval=pid;
+
 
 
   return 0;
@@ -73,6 +75,8 @@ int sys__exit(int exitcode){
       curproc->exit_code=_MKWAIT_EXIT(exitcode);
       curproc->exit_status=1;
       V(curproc->proc_sem);
+
+      //how to actually exit?
 
       return 0;
 }
