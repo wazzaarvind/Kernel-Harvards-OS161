@@ -4,12 +4,13 @@
 #include <copyinout.h>
 #include <proc_syscall.h>
 #include <syscall.h>
+#include <current.h>
 #include <thread.h>
 
 
 
-
-pid_t sys_fork(struct trapframe *tf, int *retval){
+//retval is a parameter passed by reference
+int sys_fork(struct trapframe *tf, int *retval){
 
   struct proc *newProc;
   //struct trapframe *trapframe = kmalloc(sizeof(trapframe));
@@ -24,10 +25,13 @@ pid_t sys_fork(struct trapframe *tf, int *retval){
 
   newProc = fork_proc_create(name);
 
+  newProc->ppid=curproc->pid;
+  *retval=newProc->pid;
+
   // Unknown fourth arg - passing newproc id because - long int.
   thread_fork(name, newProc, enter_forked_process, (void *)trapframe, newProc->pid);
 
-  *retval=newProc->pid;
+
 
   return 0;
 };

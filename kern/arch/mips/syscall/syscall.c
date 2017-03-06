@@ -228,7 +228,11 @@ syscall(struct trapframe *tf)
 void
 enter_forked_process(void *tf,long unsigned int temp)
 {
-	(void)tf;
-	temp=0;
+	struct trapframe trapframe= *(struct trapframe *)tf;
+	trapframe->tf_a3=0;
+	trapframe->tf_v0=0;
+	//trapframe->tf_epc+=4;
+	mips_usermode(trapframe);
+	//(void)tf;
 	temp++;
 }
