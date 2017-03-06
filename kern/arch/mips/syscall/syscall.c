@@ -174,13 +174,13 @@ syscall(struct trapframe *tf)
 		// break;
 		//
 		// case SYS__exit:
-		// 	err = sys__exit((int)tf->tf_a0);
+		// err = sys__exit((int)tf->tf_a0);
 		// break;
 
 
 	    /* Add stuff here */
 
-	    default:
+	  default:
 		kprintf("Unknown syscall %d\n", callno);
 		err = ENOSYS;
 		break;
@@ -228,10 +228,10 @@ syscall(struct trapframe *tf)
 void
 enter_forked_process(void *tf,long unsigned int temp)
 {
-	struct trapframe trapframe= *(struct trapframe *)tf;
+	struct trapframe *trapframe= (struct trapframe *)tf;
 	trapframe->tf_a3=0;
 	trapframe->tf_v0=0;
-	//trapframe->tf_epc+=4;
+	trapframe->tf_epc+=4;
 	mips_usermode(trapframe);
 	//(void)tf;
 	temp++;
