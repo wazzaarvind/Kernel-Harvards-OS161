@@ -119,7 +119,15 @@ fork_proc_create(const char *name)
 		 newProc->p_cwd = curproc->p_cwd;
 	 }
 	 newProc->ppid = curproc->pid;
-	 memcpy(curproc->filetable, newProc->filetable, sizeof(curproc->filetable));
+
+	 int i = 0;
+
+	 for(i = 0; i < 100; i++){
+
+		 newProc->filetable[i] = curproc->filetable[i];
+
+	 }
+
 	 spinlock_release(&curproc->p_lock);
 
 	 // Adding address space.
