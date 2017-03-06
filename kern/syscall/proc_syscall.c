@@ -6,6 +6,7 @@
 #include <syscall.h>
 #include <current.h>
 #include <thread.h>
+#include <kern/errno.h>
 
 
 
@@ -23,7 +24,7 @@ int sys_fork(struct trapframe *tf, int *retval){
 
   const char *name = "Newly created process!";
 
-  memcpy(&trapframe, &tf, sizeof(tf));
+  memcpy(trapframe, tf, sizeof(trapframe));
 
   newProc = fork_proc_create(name);
 
@@ -31,7 +32,7 @@ int sys_fork(struct trapframe *tf, int *retval){
   *retval=newProc->pid;
 
   // Unknown fourth arg - passing newproc id because - long int.
-  thread_fork(name, newProc, enter_forked_process, (void *)trapframe, newProc->pid);
+  thread_fork(name, newProc, enter_forked_process, trapframe, newProc->pid);
 
 
   return 0;
@@ -51,18 +52,18 @@ int waitpid(pid_t pid, int *status, int options, int *retval)
     return EINVAL;
 
   if(proctable[pid]->ppid!=curproc->pid) //does parent wait on child?
-    return ECHILD:
+    return ECHILD;
 
   if(proctable[pid]->exit_status==1)
     return ESRCH;
 
   P(proctable[pid]->proc_sem);
 
-  status=proctable[pid]->exit_code;
+  status++;// = proctable[pid]->exit_code;
 
   proc_destroy(proctable[pid]);
 
-
+  retval++;
 
   return 0;
 }
