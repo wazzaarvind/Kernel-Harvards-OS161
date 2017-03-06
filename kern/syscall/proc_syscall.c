@@ -40,7 +40,7 @@ int sys_fork(struct trapframe *tf, int *retval){
 
 
 
-int waitpid(pid_t pid, int *status, int options, int *retval)
+int sys_waitpid(pid_t pid, int *status, int options, int *retval)
 {
   if(pid<=0)
     return ESRCH;
@@ -59,11 +59,28 @@ int waitpid(pid_t pid, int *status, int options, int *retval)
 
   P(proctable[pid]->proc_sem);
 
-  status++;// = proctable[pid]->exit_code;
+  status=proctable[pid]->exit_code; //_MKWAIT_EXIT
 
   proc_destroy(proctable[pid]);
 
-  retval++;
+  *retval=pid;
 
+  return 0;
+}
+
+int sys__exit(int exitcode){
+
+      //Might need a KASSERT to make sure the process is not already exited
+      curproc->exit_code=_MKWAIT_EXIT(exitcode);
+      curproc->exit_status=1;
+      V(curproc->proc_sem);
+
+      //how to actually exit?
+
+      return 0;
+}
+
+int sys_getpid(pid_t *retval){
+  *retval=curproc->pid;
   return 0;
 }
