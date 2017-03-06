@@ -38,6 +38,8 @@
 #include <file_syscall.h>
 #include <proc_syscall.h>
 #include <copyinout.h>
+#include <sys/wait.h>
+
 
 /*
  * System call dispatcher.
@@ -157,13 +159,13 @@ syscall(struct trapframe *tf)
 		// 	err = sys__getcwd((char *)tf->tf_a0,(size_t)tf->tf_a1, &retval);
 		// break;
 
-		// case SYS_getpid:
-		// 	err = sys_getpid(&retval);
-		// break;
+		 case SYS_getpid:
+		 	err = sys_getpid(&retval);
+		 break;
 		//
-		// case SYS_waitpid:
-		// 	err = sys_waitpid((pid_t)tf->tf_a0, (int *)tf->tf_a1, (int)tf->tf_a2, &retval);
-		// break;
+		case SYS_waitpid:
+		 	err = sys_waitpid((pid_t)tf->tf_a0, (int *)tf->tf_a1, (int)tf->tf_a2, &retval);
+		 break;
 		//
 		case SYS_fork:
 		 	err = sys_fork(tf,&retval); //verify argument
@@ -173,14 +175,14 @@ syscall(struct trapframe *tf)
 		// 	err = sys_execv((const char *)tf->tf_a0, (char **)tf->tf_a1, &retval); //unsure if retval required
 		// break;
 		//
-		// case SYS__exit:
-		// err = sys__exit((int)tf->tf_a0);
-		// break;
+		 case SYS__exit:
+		 	err = sys__exit((int)tf->tf_a0);
+		 break;
 
 
 	    /* Add stuff here */
 
-	  default:
+	    default:
 		kprintf("Unknown syscall %d\n", callno);
 		err = ENOSYS;
 		break;
@@ -228,12 +230,10 @@ syscall(struct trapframe *tf)
 void
 enter_forked_process(void *tf,long unsigned int temp)
 {
-
 	struct trapframe *trapframe=(struct trapframe *)tf;
-
 	trapframe->tf_a3=0;
 	trapframe->tf_v0=0;
-	trapframe->tf_epc+=4;
+	//trapframe->tf_epc+=4;
 	mips_usermode(trapframe);
 	//(void)tf;
 	temp++;
