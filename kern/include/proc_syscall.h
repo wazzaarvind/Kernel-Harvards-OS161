@@ -3,4 +3,4 @@
 #include<proc.h>
 
 
-pid_t sys_fork(struct trapframe *tf);
+pid_t sys_fork(struct trapframe *tf, int *reval);
