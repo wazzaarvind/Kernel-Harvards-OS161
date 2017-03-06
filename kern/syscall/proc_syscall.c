@@ -7,6 +7,7 @@
 #include <current.h>
 #include <thread.h>
 #include <kern/errno.h>
+#include <kern/wait.h>
 
 
 
@@ -59,8 +60,9 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
 
   P(proctable[pid]->proc_sem);
 
-  status=proctable[pid]->exit_code; //_MKWAIT_EXIT
+  //&status=proctable[pid]->exit_code; //_MKWAIT_EXIT
 
+  status++;
   proc_destroy(proctable[pid]);
 
   *retval=pid;

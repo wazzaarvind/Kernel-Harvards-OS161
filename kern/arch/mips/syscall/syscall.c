@@ -38,7 +38,7 @@
 #include <file_syscall.h>
 #include <proc_syscall.h>
 #include <copyinout.h>
-#include <sys/wait.h>
+#include <kern/wait.h>
 
 
 /*
@@ -231,11 +231,13 @@ void
 enter_forked_process(void *tf,long unsigned int temp)
 {
 
-	struct trapframe *trapframe=(struct trapframe *)tf;
-	trapframe->tf_a3=0;
-	trapframe->tf_v0=0;
+	struct trapframe *trap = tf;
+	struct trapframe tf2 = *trap;
+	tf2->tf_a3=0;
+	tf2->tf_v0=0;
+
+	(void) temp;
 	//trapframe->tf_epc+=4;
-	mips_usermode(trapframe);
+	mips_usermode(&tf2);
 	//(void)tf;
-	temp++;
 }

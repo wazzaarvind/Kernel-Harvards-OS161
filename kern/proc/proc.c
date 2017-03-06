@@ -100,7 +100,7 @@ proc_create(const char *name)
 	proc->ppid = -1;
 	proc->exit_status=1;
 	proc->exit_code=0;
-	proc->proc_sem=sem_create("Wait Proc Sem");
+	proc->proc_sem=sem_create("Wait Proc Sem", 0);
 
 	return proc;
 }
