@@ -13,7 +13,7 @@ pid_t sys_fork(struct trapframe *tf, int *retval){
 
   struct proc *newProc;
   //struct trapframe *trapframe = kmalloc(sizeof(trapframe));
-  void *trapframe;
+  void *trapframe=NULL;
 
   // thread for the newly created process
   //struct thread *newthread;

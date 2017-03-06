@@ -229,4 +229,6 @@ void
 enter_forked_process(void *tf,long unsigned int temp)
 {
 	(void)tf;
+	temp=0;
+	temp++;
 }
