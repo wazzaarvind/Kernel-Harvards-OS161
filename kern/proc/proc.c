@@ -119,6 +119,13 @@ fork_proc_create(const char *name)
 	 memcpy(curproc->filetable, newProc->filetable, sizeof(curproc->filetable));
 	 spinlock_release(&curproc->p_lock);
 
+	 // Adding address space.
+	 newProc->p_addrspace = as_create();
+
+	 // Copying over parent address space to child
+	 as_copy(curproc->p_addrspace, &newProc->p_addrspace);
+
+
 	 return newProc;
 }
 

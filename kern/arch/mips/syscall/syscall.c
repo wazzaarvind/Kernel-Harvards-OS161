@@ -166,7 +166,7 @@ syscall(struct trapframe *tf)
 		// break;
 		//
 		case SYS_fork:
-		 	err = sys_fork(); //veritfy argument
+		 	err = sys_fork(tf); //verify argument
 		break;
 		//
 		// case SYS_execv:
@@ -223,8 +223,10 @@ syscall(struct trapframe *tf)
  *
  * Thus, you can trash it and do things another way if you prefer.
  */
+
+// Copied parameters from thread.c to match the thread_fork requirements
 void
-enter_forked_process(struct trapframe *tf)
+enter_forked_process(void *tf, unsigned long data2)
 {
 	(void)tf;
 }

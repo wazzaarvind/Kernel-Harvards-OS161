@@ -175,7 +175,6 @@ int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos){
 	struct stat *stats_file=kmalloc(sizeof(struct stat));
 	if(fd<0||fd>OPEN_MAX||curproc->filetable[fd]==NULL)
 		return EBADF;
-    kprintf("\nWhence is %d",whence);
 
 	//struct vnode *lseek_vn= kmalloc(sizeof(lseek_vn));
 
