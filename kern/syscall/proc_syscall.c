@@ -36,3 +36,33 @@ int sys_fork(struct trapframe *tf, int *retval){
 
   return 0;
 };
+
+
+
+int waitpid(pid_t pid, int *status, int options, int *retval)
+{
+  if(pid<=0)
+    return ESRCH;
+
+  if(status==NULL)
+    return EFAULT;
+
+  if(options!=0)
+    return EINVAL;
+
+  if(proctable[pid]->ppid!=curproc->pid) //does parent wait on child?
+    return ECHILD:
+
+  if(proctable[pid]->exit_status==1)
+    return ESRCH;
+
+  P(proctable[pid]->proc_sem);
+
+  status=proctable[pid]->exit_code;
+
+  proc_destroy(proctable[pid]);
+
+
+
+  return 0;
+}

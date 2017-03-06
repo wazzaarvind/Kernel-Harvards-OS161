@@ -228,7 +228,9 @@ syscall(struct trapframe *tf)
 void
 enter_forked_process(void *tf,long unsigned int temp)
 {
-	struct trapframe *trapframe= (struct trapframe *)tf;
+
+	struct trapframe *trapframe=(struct trapframe *)tf;
+
 	trapframe->tf_a3=0;
 	trapframe->tf_v0=0;
 	trapframe->tf_epc+=4;

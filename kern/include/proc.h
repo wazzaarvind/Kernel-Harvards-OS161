@@ -85,8 +85,10 @@ struct proc {
 	/*Achuth edit - Adding additional process parameters to the process structure*/
 	pid_t pid;
 	pid_t ppid;
-	//int exit_status; /* 0 - running, 1 - exited */
-	//int exit_code;
+	int exit_status; /* 0 - running, 1 - exited */
+	int exit_code;
+
+	struct semaphore *proc_sem;
 
 	/* TODO: Needs a synchronization premitive for putting this process to sleep during pid_wait */
 
