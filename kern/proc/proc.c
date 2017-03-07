@@ -109,6 +109,7 @@ proc_create(const char *name)
 struct proc *
 fork_proc_create(const char *name)
 {
+
 	 struct proc *newProc;
 
 	 newProc = proc_create(name);
@@ -118,32 +119,9 @@ fork_proc_create(const char *name)
 		 VOP_INCREF(curproc->p_cwd);
 		 newProc->p_cwd = curproc->p_cwd;
 	 }
-	 newProc->ppid = curproc->pid;
-
-	//  for(int i = 0; i < 100; i++){
-	// 	 newProc->filetable[i] = NULL;
-	//  }
-
-
-	 for(int i = 0; i < 64; i++){
-			 		// Acquire lock before handling the file table.
-					if(curproc->filetable[i] != NULL){
-						kprintf("\ncopying filetable. %p\n", &curproc->filetable[i]);
-						kprintf(" Counter Before: %d", curproc->filetable[1]->counter);
-						curproc->filetable[i]->counter += 1;
-						newProc->filetable[i] = curproc->filetable[i];
-					}
-	 }
-
-	 if(curproc->filetable[1]->lock == NULL){
-		 kprintf("Write lock NULL in proc");
-		 kprintf(" PID : %d", curproc->pid);
-		 kprintf(" Counter : %d", curproc->filetable[1]->counter);
-	 } else {
-		 kprintf("Write lock not NULL in proc");
-	 }
-
 	 spinlock_release(&curproc->p_lock);
+
+	 newProc->ppid = curproc->pid;
 
 	 // Adding address space.
 	 newProc->p_addrspace = as_create();
@@ -151,6 +129,14 @@ fork_proc_create(const char *name)
 	 // Copying over parent address space to child
 	 as_copy(curproc->p_addrspace, &newProc->p_addrspace);
 
+
+	 for(int i = 0; i < 64; i++){
+			 		// Acquire lock before handling the file table.
+					if(curproc->filetable[i] != NULL){
+						curproc->filetable[i]->counter += 1;
+						newProc->filetable[i] = curproc->filetable[i];
+					}
+	 }
 
 	 return newProc;
 }
@@ -293,11 +279,10 @@ proc_create_runprogram(const char *name)
 
 	/*Achuth edit - Enabling the first three file descriptors*/
 	// Init the required file descriptors in file table using vfs_open
-	int check = 0;
-	struct vnode *init = kmalloc(sizeof(init));
-	struct filehandle *stdin = kmalloc(sizeof(* stdin));
-	struct filehandle *stdout = kmalloc(sizeof(* stdout));
-	struct filehandle *stderr = kmalloc(sizeof(* stderr));
+	struct vnode *init;
+	struct filehandle *stdin = kmalloc(sizeof(struct filehandle));
+	struct filehandle *stdout = kmalloc(sizeof(struct filehandle));
+	struct filehandle *stderr = kmalloc(sizeof(struct filehandle));
 
 	//char *console = "con:";
 
@@ -306,52 +291,34 @@ proc_create_runprogram(const char *name)
 	}
 
 	// STDIN insertion :
-	check = vfs_open((char*) "con:", O_RDONLY, 0, &init);
+	vfs_open((char*) "con:", O_RDONLY, 0, &init);
 
 	stdin->file = init;
-	stdin->counter = 10;
+	stdin->counter = 1;
 	stdin->offset = 0;
 	stdin->lock = lock_create("STDIN lock");
-
-
 	newproc->filetable[0] = stdin;
 
+
 	// STDOUT insertion :
-	check = vfs_open((char*) "con:", O_WRONLY, 0, &init);
+	vfs_open((char*) "con:", O_WRONLY, 0, &init);
 
 	stdout->file = init;
-	stdout->counter = 10;
+	stdout->counter = 1;
 	stdout->offset = 0;
 	stdout->lock = lock_create("STDOUT lock");
-	kprintf("\ncopying filetable. STDOUT %p\n", &curproc->filetable[1]);
-
-
-	// kprintf("\n Write Lock : \n");
-	// if(stdout->lock == NULL){
-	// 	kprintf("\nWrite NULL\n");
-	// } else {
-	// 	kprintf("\nWrite not NULL\n");
-	// }
-
-	if(check){
-	}
-
 	newproc->filetable[1] = stdout;
 
+
 	// STDERR insertion :
-	check = vfs_open((char*) "con:", O_WRONLY, 0, &init);
+	vfs_open((char*) "con:", O_WRONLY, 0, &init);
 
 	stderr->file = init;
-	stderr->counter = 10;
+	stderr->counter = 1;
 	stderr->offset = 0;
 	stderr->lock = lock_create("STDERR lock");
-	kprintf("\ncopying filetable. STDERR %p\n", &curproc->filetable[2]);
-
-
-	if(check){
-	}
-
 	newproc->filetable[2] = stderr;
+
 
 	return newproc;
 }

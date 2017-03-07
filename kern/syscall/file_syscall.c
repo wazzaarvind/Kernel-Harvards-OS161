@@ -24,15 +24,9 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
 
   /*Achuth edits : Fetching the stdout file handle and writing to the file.*/
 
-  struct uio uioWrite;// = kmalloc(sizeof(uioWrite));
-  struct iovec iov; //= kmalloc(sizeof(iov));
-  //struct vnode *outFile;//= kmalloc(sizeof(outFile));
+  struct uio uioWrite;
+  struct iovec iov;
 
-  kprintf("\nFD : %d\n", fd);
-  kprintf("\nCounter : %d\n", curproc->filetable[fd]->counter);
-  if(curproc->filetable[fd]->lock == NULL){
-    kprintf("\nLock NULL\n");
-  }
   lock_acquire(curproc->filetable[fd]->lock);
   iov.iov_ubase = (userptr_t)buf;
   iov.iov_len = size;
@@ -46,15 +40,19 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
   uioWrite.uio_space = curproc->p_addrspace;
 
   int err = VOP_WRITE(curproc->filetable[fd]->file, &uioWrite);
+
+  //kprintf("\n%d\n", err);
+
   if(err){
-	   lock_release(curproc->filetable[fd]->lock);
+      kprintf("\nError!!\n");
+	    lock_release(curproc->filetable[fd]->lock);
 	    return err;
   }
 
   curproc->filetable[fd]->offset = uioWrite.uio_offset;
   *retval = size - uioWrite.uio_resid;
   lock_release(curproc->filetable[fd]->lock);
-	return result;
+	return 0;
 	//check when address space pointed by buf is invalid, return EFAULT
 }
 
@@ -128,7 +126,7 @@ int sys_open(char *path_file, int flags, mode_t mode, int *retval){
 
 	curproc->filetable[file_index]->offset=0;
 
-	curproc->filetable[file_index]->counter++;
+	curproc->filetable[file_index]->counter=1;
 	curproc->filetable[file_index]->lock=lock_create(path_file);
 	curproc->filetable[file_index]->file=open_vn;
 
@@ -144,6 +142,7 @@ int sys_close(int fd){
 	if(fd<0||fd>OPEN_MAX)
         	return EBADF;
 
+  kprintf("Decrementing counter");
 	curproc->filetable[fd]->counter--;
 
 	if(curproc->filetable[fd]->counter == 0)
@@ -151,6 +150,7 @@ int sys_close(int fd){
     kprintf("LOCK DESTROY : %d", curproc->pid);
 		lock_destroy(curproc->filetable[fd]->lock);
     vfs_close(curproc->filetable[fd]->file);
+    kfree(curproc->filetable[fd]=NULL);
 		curproc->filetable[fd]=NULL;
 	}
 	return 0;

@@ -47,16 +47,18 @@ main(void)
   if (pid == 0)
 	{
 
-		printf("Hello from the child process!\n");
+		printf("\nHello from the child process!\n");
 
 	}
 	else
 	{
 
-		printf("Hello from the parent process!\n");
+		printf("\nHello from the parent process!\n");
 
 	}
 
-	//exit(0);
-	return 0;
+	printf("\n Reached here!\n");
+
+
+	exit(0);
 }

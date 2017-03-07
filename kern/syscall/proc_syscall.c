@@ -14,29 +14,31 @@
 //retval is a parameter passed by reference
 int sys_fork(struct trapframe *tf, int *retval){
 
-  kprintf("Fork starts");
-
+  kprintf("\n Fork sys call\n");
   struct proc *newProc;
   struct trapframe *trapframe = kmalloc(sizeof(trapframe));
   //void *trapframe;
 
+  //(void) tf;
   // thread for the newly created process
   //struct thread *newthread;
 
   const char *name = "Newly created process!";
 
-  //memcpy(trapframe, tf, sizeof(trapframe));
-
-  *trapframe = *tf;
+  memcpy(trapframe, tf, sizeof(trapframe));
 
   newProc = fork_proc_create(name);
 
   newProc->ppid=curproc->pid;
+
   *retval=newProc->pid;
+
+  kprintf("\n Just before fork \n");
 
   // Unknown fourth arg - passing newproc id because - long int.
   thread_fork(name, newProc, (void*)enter_forked_process, trapframe, newProc->pid);
 
+  kprintf("\n Just after fork \n");
 
   return 0;
 };
@@ -57,12 +59,14 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
   if(proctable[pid]->ppid!=curproc->pid) //does parent wait on child?
     return ECHILD;
 
+  // Need to check exit status of the child before waiting on it.
   if(proctable[pid]->exit_status==1)
     return ESRCH;
 
   P(proctable[pid]->proc_sem);
 
   //&status=proctable[pid]->exit_code; //_MKWAIT_EXIT
+
 
   status++;
   proc_destroy(proctable[pid]);
@@ -73,6 +77,10 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
 }
 
 int sys__exit(int exitcode){
+
+      // Ensure not already exited
+
+      // Who will check on the parent ? 
 
       //Might need a KASSERT to make sure the process is not already exited
       curproc->exit_code=_MKWAIT_EXIT(exitcode);
