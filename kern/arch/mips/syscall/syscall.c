@@ -38,6 +38,7 @@
 #include <file_syscall.h>
 #include <proc_syscall.h>
 #include <copyinout.h>
+#include <addrspace.h>
 
 /*
  * System call dispatcher.
@@ -228,6 +229,7 @@ syscall(struct trapframe *tf)
 void
 enter_forked_process(struct trapframe *tf,long unsigned int temp)
 {
+	temp++;
 
 	struct trapframe trapframe =  *tf;
 
@@ -235,6 +237,4 @@ enter_forked_process(struct trapframe *tf,long unsigned int temp)
 	trapframe.tf_v0=0;
 	trapframe.tf_epc+=4;
 	mips_usermode(&trapframe);
-	//(void)tf;
-	temp++;
 }

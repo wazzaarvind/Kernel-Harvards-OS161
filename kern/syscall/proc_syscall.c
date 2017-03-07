@@ -25,7 +25,9 @@ int sys_fork(struct trapframe *tf, int *retval){
 
   const char *name = "Newly created process!";
 
-  memcpy(trapframe, tf, sizeof(trapframe));
+  //memcpy(trapframe, tf, sizeof(trapframe));
+
+  *trapframe = *tf;
 
   newProc = fork_proc_create(name);
 

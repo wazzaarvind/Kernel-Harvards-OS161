@@ -28,6 +28,11 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
   struct iovec iov; //= kmalloc(sizeof(iov));
   //struct vnode *outFile;//= kmalloc(sizeof(outFile));
 
+  kprintf("\nFD : %d\n", fd);
+  kprintf("\nCounter : %d\n", curproc->filetable[fd]->counter);
+  if(curproc->filetable[fd]->lock == NULL){
+    kprintf("\nLock NULL\n");
+  }
   lock_acquire(curproc->filetable[fd]->lock);
   iov.iov_ubase = (userptr_t)buf;
   iov.iov_len = size;
@@ -143,6 +148,7 @@ int sys_close(int fd){
 
 	if(curproc->filetable[fd]->counter == 0)
 	{
+    kprintf("LOCK DESTROY : %d", curproc->pid);
 		lock_destroy(curproc->filetable[fd]->lock);
     vfs_close(curproc->filetable[fd]->file);
 		curproc->filetable[fd]=NULL;
