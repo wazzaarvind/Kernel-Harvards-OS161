@@ -78,6 +78,7 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
   //status++;
   proc_destroy(proctable[pid]);
 
+  proctable[pid]=NULL;
   *retval=pid;
 
   return 0;
@@ -85,6 +86,7 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
 
 int sys__exit(int exitcode){
 
+      KASSERT(curproc->exit_status!=1);
       // Ensure not already exited
 
       // Who will check on the parent ?
@@ -93,6 +95,7 @@ int sys__exit(int exitcode){
       curproc->exit_code=_MKWAIT_EXIT(exitcode);
       curproc->exit_status=1;
       V(curproc->proc_sem);
+      //V(proctable[curproc->pid]->proc_sem);
 
       thread_exit();
       //how to actually exit?

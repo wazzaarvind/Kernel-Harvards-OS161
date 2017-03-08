@@ -221,11 +221,32 @@ proc_destroy(struct proc *proc)
 		as_destroy(as);
 	}
 
+	int i=0;
+	while(i<100)
+	{
+		if(proc->filetable[i]!=NULL)
+		{
+			proc->filetable[i]->counter--;	
+			proc->filetable[i]=NULL;
+			if(proc->filetable[i]->counter==0)
+			{
+				lock_destroy(proc->filetable[i]->lock);
+				vfs_close(proc->filetable[i]->file);
+				kfree(proc->filetable[i]);
+			}
+		}
+		i++;
+	}
+
 	KASSERT(proc->p_numthreads == 0);
-	spinlock_cleanup(&proc->p_lock);
+	
 
 	/* Achuth edit - Remove the process table row */
 	proctable[proc->pid] = NULL;
+
+	sem_destroy(proc->proc_sem);
+	spinlock_cleanup(&proc->p_lock);
+
 
 
 	kfree(proc->p_name);
