@@ -65,13 +65,15 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
 
   P(proctable[pid]->proc_sem);
 
-  int check = copyout(&proctable[pid]->exit_code, status, sizeof(int));
+  int check = copyout(&proctable[pid]->exit_code, (userptr_t)status, sizeof(int));
+
+  if(check){}
 
 
   //&status=proctable[pid]->exit_code; //_MKWAIT_EXIT
 
 
-  status++;
+  //status++;
   proc_destroy(proctable[pid]);
 
   *retval=pid;
@@ -90,6 +92,7 @@ int sys__exit(int exitcode){
       curproc->exit_status=1;
       V(curproc->proc_sem);
 
+      thread_exit();
       //how to actually exit?
 
       return 0;
@@ -100,98 +103,98 @@ int sys_getpid(pid_t *retval){
   return 0;
 }
 
-int sys_execv(const char *program, char **args)
-{
-  size_t length;
-  char *program_kern; //might need to kmalloc
+// int sys_execv(const char *program, char **args)
+// {
+//   size_t length;
+//   char *program_kern; //might need to kmalloc
 
-  //First Copy Program into Kernel Memory, PATH_MAX is the maximum size of an instruction path
-  int check1=copyinstr((userptr_t)program, program_kern, PATH_MAX, &length); //might need to check error for all these
-
-
-  char **kernel_args=(char **)kmalloc(sizeof(char**));
-
-  //Copy address/pointers from User to Kernel Memory
-  int check2=copyin((userptr_t) args, kernel_rgs, sizeof(char **));
-
-  int i=0;
-  for(i=0;args[i]!=NULL;i++)
-  {
-    //Copy each value in user memory to kernel memory
-    kernel_args[i] = (char *)kmalloc(sizeof(char)*PATH_MAX);
-    int check3=copyinstr((userptr_t) args[i],kernel_args[i], PATH_MAX, &length);
-  }
-
-  kernel_args[i]=NULL;
-
-  //Do RunProgram activities
+//   //First Copy Program into Kernel Memory, PATH_MAX is the maximum size of an instruction path
+//   int check1=copyinstr((userptr_t)program, program_kern, PATH_MAX, &length); //might need to check error for all these
 
 
-  struct addrspace *as;
-  struct vnode *v;
-  vaddr_t entrypoint, stackptr;
+//   char **kernel_args=(char **)kmalloc(sizeof(char**));
 
-  int result;
+//   //Copy address/pointers from User to Kernel Memory
+//   int check2=copyin((userptr_t) args, kernel_rgs, sizeof(char **));
 
-  /* Open the file. */
-  result = vfs_open(progname, O_RDONLY, 0, &v);
-  if (result) {
+//   int i=0;
+//   for(i=0;args[i]!=NULL;i++)
+//   {
+//     //Copy each value in user memory to kernel memory
+//     kernel_args[i] = (char *)kmalloc(sizeof(char)*PATH_MAX);
+//     int check3=copyinstr((userptr_t) args[i],kernel_args[i], PATH_MAX, &length);
+//   }
 
-    //Program has ended,might need to deallocate memory
-    return result;
-  }
+//   kernel_args[i]=NULL;
+
+//   //Do RunProgram activities
 
 
+//   struct addrspace *as;
+//   struct vnode *v;
+//   vaddr_t entrypoint, stackptr;
 
+//   int result;
 
+//   /* Open the file. */
+//   result = vfs_open(progname, O_RDONLY, 0, &v);
+//   if (result) {
 
-  /* We should be a new process. */
-  KASSERT(proc_getas() == NULL);
-
-  /* Create a new address space. */
-  as = as_create();
-  if (as == NULL) {
-    vfs_close(v);
-    return ENOMEM;
-  }
-
-  /* Switch to it and activate it. */
-  proc_setas(as);
-  as_activate();
-
-  /* Load the executable. */
-  result = load_elf(v, &entrypoint);
-  if (result) {
-    //might need to deallocate memory
-    /* p_addrspace will go away when curproc is destroyed */
-    vfs_close(v);
-    return result;
-  }
-
-  /* Done with the file now. */
-  vfs_close(v);
-
-  result = as_define_stack(as, &stackptr);
-  if (result) {
-
-    //might need to deallocate space
-    /* p_addrspace will go away when curproc is destroyed */
-    return result;
-  }
-
-  //Have to copy arguments from Kernel Space to User Space and use those as parameters in enter_new_process
+//     //Program has ended,might need to deallocate memory
+//     return result;
+//   }
 
 
 
 
 
-  /* Warp to user mode. */
-  enter_new_process(0 /*argc*/, NULL /*userspace addr of argv*/,
-        NULL /*userspace addr of environment*/,
-        stackptr, entrypoint);
+//    We should be a new process. 
+//   KASSERT(proc_getas() == NULL);
 
-  /* enter_new_process does not return. */
-  panic("enter_new_process returned\n");
-  return EINVAL;
+//   /* Create a new address space. */
+//   as = as_create();
+//   if (as == NULL) {
+//     vfs_close(v);
+//     return ENOMEM;
+//   }
 
-}
+//   /* Switch to it and activate it. */
+//   proc_setas(as);
+//   as_activate();
+
+//   /* Load the executable. */
+//   result = load_elf(v, &entrypoint);
+//   if (result) {
+//     //might need to deallocate memory
+//     /* p_addrspace will go away when curproc is destroyed */
+//     vfs_close(v);
+//     return result;
+//   }
+
+//   /* Done with the file now. */
+//   vfs_close(v);
+
+//   result = as_define_stack(as, &stackptr);
+//   if (result) {
+
+//     //might need to deallocate space
+//     /* p_addrspace will go away when curproc is destroyed */
+//     return result;
+//   }
+
+//   //Have to copy arguments from Kernel Space to User Space and use those as parameters in enter_new_process
+
+
+
+
+
+//   /* Warp to user mode. */
+//   enter_new_process(0 /*argc*/, NULL /*userspace addr of argv*/,
+//         NULL /*userspace addr of environment*/,
+//         stackptr, entrypoint);
+
+//   /* enter_new_process does not return. */
+//   panic("enter_new_process returned\n");
+//   return EINVAL;
+
+// }
