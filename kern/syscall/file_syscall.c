@@ -20,8 +20,6 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
   if(fd<0||fd>OPEN_MAX)
   	return EBADF;
 
-  int result = 0;
-
   /*Achuth edits : Fetching the stdout file handle and writing to the file.*/
 
   struct uio uioWrite;
