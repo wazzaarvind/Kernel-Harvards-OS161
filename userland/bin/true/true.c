@@ -61,6 +61,6 @@ main(void)
 
 	printf("\n Reached here!\n");
 
-	exit(0);;
+	 exit(0);;
 
 }

@@ -48,6 +48,7 @@ int sys_fork(struct trapframe *tf, int *retval){
 
 int sys_waitpid(pid_t pid, int *status, int options, int *retval)
 {
+  kprintf("pid : %d", pid);
   if(pid<=0)
     return ESRCH;
 

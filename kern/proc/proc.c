@@ -98,7 +98,7 @@ proc_create(const char *name)
 	proc->pid = i;
 	proctable[i] = proc;
 	proc->ppid = -1;
-	proc->exit_status=1;
+	proc->exit_status=0;
 	proc->exit_code=0;
 	proc->proc_sem=sem_create("Wait Proc Sem", 0);
 
