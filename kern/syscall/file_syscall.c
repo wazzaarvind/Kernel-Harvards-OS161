@@ -39,8 +39,6 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
 
   int err = VOP_WRITE(curproc->filetable[fd]->file, &uioWrite);
 
-  //kprintf("\n%d\n", err);
-
   if(err){
       kprintf("\nError!!\n");
 	    lock_release(curproc->filetable[fd]->lock);

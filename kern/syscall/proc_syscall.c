@@ -31,14 +31,15 @@ int sys_fork(struct trapframe *tf, int *retval){
 
   newProc->ppid=curproc->pid;
 
-  *retval=newProc->pid;
-
   kprintf("\n Just before fork \n");
+
+  *retval=newProc->pid;
 
   // Unknown fourth arg - passing newproc id because - long int.
   thread_fork(name, newProc, (void*)enter_forked_process, trapframe, newProc->pid);
 
   kprintf("\n Just after fork \n");
+
 
   return 0;
 };
@@ -85,7 +86,7 @@ int sys__exit(int exitcode){
 
       // Ensure not already exited
 
-      // Who will check on the parent ? 
+      // Who will check on the parent ?
 
       //Might need a KASSERT to make sure the process is not already exited
       curproc->exit_code=_MKWAIT_EXIT(exitcode);
@@ -148,7 +149,7 @@ int sys_getpid(pid_t *retval){
 
 
 
-//    We should be a new process. 
+//    We should be a new process.
 //   KASSERT(proc_getas() == NULL);
 
 //   /* Create a new address space. */

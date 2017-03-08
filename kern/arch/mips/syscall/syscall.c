@@ -167,8 +167,11 @@ syscall(struct trapframe *tf)
 		break;
 
 		case SYS_fork:
+			{
 		 	err = sys_fork(tf,&retval); //verify argument
+			//kprintf("retval : %d", retval);
 			//kprintf("Error : %d\n", err);
+			}
 		break;
 		//
 		// case SYS_execv:
@@ -241,4 +244,6 @@ enter_forked_process(struct trapframe *tf,long unsigned int temp)
 	kprintf("\nEntered forked process %d\n", curproc->filetable[1]->counter);
 
 	mips_usermode(&trapframe);
+
+
 }

@@ -48,17 +48,19 @@ main(void)
 	{
 
 		printf("\nHello from the child process!\n");
+		exit(0);
 
 	}
 	else
 	{
-
+		int status;
+		(void) waitpid(pid, &status, 0);
 		printf("\nHello from the parent process!\n");
 
 	}
 
 	printf("\n Reached here!\n");
 
-	return 0; 
+	exit(0);;
 
 }
