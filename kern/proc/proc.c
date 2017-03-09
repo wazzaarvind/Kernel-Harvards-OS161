@@ -124,7 +124,7 @@ fork_proc_create(const char *name)
 	 newProc->ppid = curproc->pid;
 
 	 // Adding address space.
-	 newProc->p_addrspace = as_create();
+	 //newProc->p_addrspace = as_create();
 
 	 // Copying over parent address space to child
 	 as_copy(curproc->p_addrspace, &newProc->p_addrspace);

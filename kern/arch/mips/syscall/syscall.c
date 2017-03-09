@@ -163,6 +163,7 @@ syscall(struct trapframe *tf)
 		 break;
 		//
 		case SYS_waitpid:
+			kprintf("\nCalling waitpid\n");
 			err = sys_waitpid((pid_t)tf->tf_a0, (int *)tf->tf_a1, (int)tf->tf_a2, &retval);
 		break;
 

@@ -25,18 +25,23 @@ int sys_fork(struct trapframe *tf, int *retval){
 
   const char *name = "Newly created process!";
 
-  memcpy(trapframe, tf, sizeof(trapframe));
+  memcpy(trapframe, tf, sizeof(struct trapframe));
 
   newProc = fork_proc_create(name);
 
-  newProc->ppid=curproc->pid;
+  //newProc->ppid=curproc->pid;
 
   kprintf("\n Just before fork \n");
+
+  kprintf("\n PID : %d\n",newProc->pid);
+  kprintf("\n PID parent: %d\n",curproc->pid);
 
   *retval=newProc->pid;
 
   // Unknown fourth arg - passing newproc id because - long int.
-  thread_fork(name, newProc, (void*)enter_forked_process, trapframe, newProc->pid);
+  int check=thread_fork(name, newProc, (void*)enter_forked_process, trapframe, newProc->pid);
+
+  kprintf("Thread fork return %d",check);
 
   kprintf("\n Just after fork \n");
 
@@ -48,7 +53,7 @@ int sys_fork(struct trapframe *tf, int *retval){
 
 int sys_waitpid(pid_t pid, int *status, int options, int *retval)
 {
-  kprintf("pid : %d", pid);
+  kprintf("\nDude %d\n",pid);
   if(pid<=0)
     return ESRCH;
 
@@ -65,7 +70,11 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
   if(proctable[pid]->exit_status==1)
     return ESRCH;
 
+  kprintf("\nDude %d\n",pid);
+
   P(proctable[pid]->proc_sem);
+
+  kprintf("\nDude %d\n",pid);
 
   int check = copyout((const void *)&proctable[pid]->exit_code, (userptr_t)status, sizeof(int));
 
