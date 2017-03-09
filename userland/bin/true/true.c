@@ -39,10 +39,13 @@ int
 main(void)
 {
 	printf("fork enter : ");
+	printf("Hello");
 
 	/* Just exit with success. */
 
 	int pid = fork();
+	printf("Hello");
+	printf("PID : %d",pid);
 
   if (pid == 0)
 	{
@@ -53,9 +56,13 @@ main(void)
 	}
 	else
 	{
+		printf("Hello");
 		int status;
-		(void) waitpid(pid, &status, 0);
-		printf("\nHello from the parent process!\n");
+		int check=waitpid(pid, &status,0);
+		if(check!=0)
+			printf("Fail");
+		else
+			printf("\nHello from the parent process!\n");
 
 	}
 

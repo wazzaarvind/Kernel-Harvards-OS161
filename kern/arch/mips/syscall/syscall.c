@@ -244,7 +244,7 @@ enter_forked_process(struct trapframe *tf,long unsigned int temp)
 	kprintf("\nEntered forked process %d\n", curproc->filetable[1]->counter);
 
 	mips_usermode(&trapframe);
-	
+	kprintf("\nEntered forked process %d\n", curproc->filetable[1]->counter);
 
 
 }
