@@ -67,7 +67,7 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
 
   P(proctable[pid]->proc_sem);
 
-  int check = copyout(&proctable[pid]->exit_code, (userptr_t)status, sizeof(int));
+  int check = copyout((const void *)&proctable[pid]->exit_code, (userptr_t)status, sizeof(int));
 
   if(check){}
 
@@ -112,6 +112,7 @@ int sys_getpid(pid_t *retval){
 // {
 //   size_t length;
 //   char *program_kern; //might need to kmalloc
+
 
 //   //First Copy Program into Kernel Memory, PATH_MAX is the maximum size of an instruction path
 //   int check1=copyinstr((userptr_t)program, program_kern, PATH_MAX, &length); //might need to check error for all these
@@ -190,7 +191,53 @@ int sys_getpid(pid_t *retval){
 //   //Have to copy arguments from Kernel Space to User Space and use those as parameters in enter_new_process
 
 
+     /*int i=0;
+     int arg_length=0,old_length=0;
+     while(args[i]!=NULL)
+     {
+      arg_length=strlen(args[i]+1);
+      old_length=strlen(args[i]+1);
+      if(arg_length%4!=0)
+        arg_length+=4-(arg_length%4);
 
+      char *stack_copy=kmalloc(sizeof(arg_length));
+      int j=0;
+      for(j=0;j<arg_length;j++)
+      {
+        if(j<old_length)
+          stack_copy[j]=args[i][j];
+        else
+          stack_copy[j]='\0';
+
+      }
+      stackptr-=arg_length;
+      int check4=copyout((const void *)stack_copy,(userptr_t)stackptr,(size_t)arg_length);
+      if(check4){
+
+        }
+        i++;
+     }
+      //if(argv[i]==NULL){
+        stackptr-=4;
+      //}
+
+      int k=0;
+      for(k=i-1;k>=0;k--)
+      {
+        stackptr = stackptr - sizeof(char*);
+        int check5=copyout((const void *)(args + i),(userptr_t)stackptr,(sizeof(char *)));
+      if(check5){
+
+      }
+      }
+      //may need to do kfree's
+
+
+
+      //Have to copy all pointers
+
+      
+     }*/
 
 
 //   /* Warp to user mode. */
