@@ -234,18 +234,16 @@ syscall(struct trapframe *tf)
 void
 enter_forked_process(struct trapframe *tf,long unsigned int temp)
 {
-	temp++;
+	// Have to use the variable to avoid the warnings. 
+	(void) temp;
 
-	struct trapframe trapframe =  *tf;
+	struct trapframe trapframe = *tf;
 
 	trapframe.tf_a3=0;
 	trapframe.tf_v0=0;
 	trapframe.tf_epc+=4;
 
-	kprintf("\nEntered forked process %d\n", curproc->filetable[1]->counter);
-
 	mips_usermode(&trapframe);
-	kprintf("\nEntered forked process %d\n", curproc->filetable[1]->counter);
 
 
 }
