@@ -51,14 +51,14 @@ main(void)
 	{
 
 		printf("\nHello from the child process!\n");
-		//exit(0);
+		exit(0);
 
 	}
 	else
 	{
 		//printf("Hello");
-		//int status;
-		//int check=waitpid(pid, &status,0);
+		int status;
+		waitpid(pid, &status,0);
 
 			//printf("Fail");
 		

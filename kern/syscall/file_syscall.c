@@ -101,7 +101,7 @@ int sys_open(char *path_file, int flags, mode_t mode, int *retval){
 		return EINVAL;
   }
 
-  struct vnode *open_vn;//;= kmalloc(sizeof(open_vn));
+  //struct vnode *open_vn;//;= kmalloc(sizeof(open_vn));
 
   size_t kernCopy;
 
@@ -111,20 +111,21 @@ int sys_open(char *path_file, int flags, mode_t mode, int *retval){
     return EFAULT;
   }
 
-	int check=vfs_open(buf,flags, mode, &open_vn); // or curproc->filetable[index]->file instead of open_vn
+  	curproc->filetable[file_index]=kmalloc(sizeof(struct filehandle));
+	int check=vfs_open(buf,flags, mode, &curproc->filetable[file_index]->file); // or curproc->filetable[index]->file instead of open_vn
 
 	if(check!=0)
 	{
 		return check;
 	}
 
-  curproc->filetable[file_index]=kmalloc(sizeof(struct filehandle));
+  	
 
 	curproc->filetable[file_index]->offset=0;
 
 	curproc->filetable[file_index]->counter=1;
 	curproc->filetable[file_index]->lock=lock_create(path_file);
-	curproc->filetable[file_index]->file=open_vn;
+	//curproc->filetable[file_index]->file=open_vn;
 
 
 	*retval=file_index;
@@ -138,15 +139,16 @@ int sys_close(int fd){
 	if(fd<0||fd>OPEN_MAX)
         	return EBADF;
 
-  kprintf("Decrementing counter");
+  	kprintf("Decrementing counter");
+  	if(curproc->filetable[fd]->counter!=0)
 	curproc->filetable[fd]->counter--;
 
-	if(curproc->filetable[fd]->counter == 0)
+	if(curproc->filetable[fd]->counter == 0 && fd>2)
 	{
-    kprintf("LOCK DESTROY : %d", curproc->pid);
+    	kprintf("LOCK DESTROY : %d", curproc->pid);
 		lock_destroy(curproc->filetable[fd]->lock);
-    vfs_close(curproc->filetable[fd]->file);
-    kfree(curproc->filetable[fd]=NULL);
+    	vfs_close(curproc->filetable[fd]->file);
+    	kfree(curproc->filetable[fd]);
 		curproc->filetable[fd]=NULL;
 	}
 	return 0;

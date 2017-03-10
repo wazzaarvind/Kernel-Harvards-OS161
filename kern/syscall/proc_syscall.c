@@ -7,6 +7,7 @@
 #include <current.h>
 #include <thread.h>
 #include <kern/errno.h>
+#include <vm.h>
 #include <kern/wait.h>
 
 
@@ -54,9 +55,20 @@ int sys_fork(struct trapframe *tf, int *retval){
 
 int sys_waitpid(pid_t pid, int *status, int options, int *retval)
 {
-  kprintf("\nDude %d\n",pid);
+  //kprintf("\nWaitpid%d %d\n",pid,options);
+
+  if (pid == curproc->ppid || pid == curproc->pid) 
+    return ECHILD;
+
   if(pid<=0)
     return ESRCH;
+
+
+  //if (pid > PID_MAX || pid < PID_MIN) {
+    //return ESRCH;
+  //}
+
+
 
   if(status==NULL)
     return EFAULT;
@@ -64,19 +76,45 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
   if(options!=0)
     return EINVAL;
 
+
+    if (proctable[pid]->ppid == curproc->ppid) {
+      return ECHILD;
+    }
+
+ 
+
+  // Need to check exit status of the child before waiting on it.
+  if(proctable[pid] == NULL)
+    return ESRCH;
+
   if(proctable[pid]->ppid!=curproc->pid) //does parent wait on child?
     return ECHILD;
 
-  // Need to check exit status of the child before waiting on it.
   if(proctable[pid]->exit_status==1)
     return ESRCH;
 
-  P(proctable[pid]->proc_sem);
 
 
-  int check = copyout((const void *)&proctable[pid]->exit_code, (userptr_t)status, sizeof(int));
 
-  if(check){}
+
+  if(proctable[pid]->exit_status!=1) { // If child has not exited already
+  
+      P(proctable[pid]->proc_sem);  // wwait for child
+    }
+  
+
+  //P(proctable[pid]->proc_sem);
+
+  if (status != NULL) {
+    int check = copyout((const void *)&proctable[pid]->exit_code, (userptr_t)status, sizeof(int));
+    if (check) {
+      //proc_destroy(proctable[pid]);
+      //proctable[pid] = NULL;
+      return check;
+    }
+  }
+
+  //if(check){}
 
 
   //&status=proctable[pid]->exit_code; //_MKWAIT_EXIT
@@ -93,15 +131,25 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
 
 int sys__exit(int exitcode){
 
+      //kprintf("\nEXIT %d\n",exitcode);
       KASSERT(curproc->exit_status!=1);
       // Ensure not already exited
 
       // Who will check on the parent ?
 
+
+      //if(proctable[curproc->ppid]->exit_status==0) 
+      //{
       //Might need a KASSERT to make sure the process is not already exited
+      //if(exitcode!=0)
+        //curproc->exit_code=_MKWAIT_SIG(exitcode);
+      //else
       curproc->exit_code=_MKWAIT_EXIT(exitcode);
       curproc->exit_status=1;
       V(curproc->proc_sem);
+      //}
+      //else
+        //proc_destroy(curproc);
       //V(proctable[curproc->pid]->proc_sem);
 
       thread_exit();

@@ -51,6 +51,7 @@ struct filehandle {
 	volatile int counter;
 	int offset;
 	struct lock *lock;
+	int flags;
 
 };
 

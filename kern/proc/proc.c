@@ -227,12 +227,13 @@ proc_destroy(struct proc *proc)
 		if(proc->filetable[i]!=NULL)
 		{
 			proc->filetable[i]->counter--;	
-			proc->filetable[i]=NULL;
+			
 			if(proc->filetable[i]->counter==0)
 			{
 				lock_destroy(proc->filetable[i]->lock);
 				vfs_close(proc->filetable[i]->file);
 				kfree(proc->filetable[i]);
+				proc->filetable[i]=NULL;
 			}
 		}
 		i++;
@@ -311,34 +312,47 @@ proc_create_runprogram(const char *name)
 		newproc->filetable[i] = NULL;
 	}
 
+	char *strvfs=kstrdup("con:");
 	// STDIN insertion :
-	vfs_open((char*) "con:", O_RDONLY, 0, &init);
-
+	int check1=vfs_open(strvfs, O_RDONLY, 0, &init);
+	kprintf("\nCheck 1 %d\n",check1);
+	//if(check1)
+	//{
 	stdin->file = init;
 	stdin->counter = 1;
 	stdin->offset = 0;
+	stdin->flags = O_RDONLY;
 	stdin->lock = lock_create("STDIN lock");
 	newproc->filetable[0] = stdin;
+	//}
 
-
+	strvfs=kstrdup("con:");
 	// STDOUT insertion :
-	vfs_open((char*) "con:", O_WRONLY, 0, &init);
-
+	int check2=vfs_open(strvfs, O_WRONLY, 0, &init);
+	kprintf("\nCheck 2 %d\n",check2);
+	//if(!check2)
+	//{	
 	stdout->file = init;
 	stdout->counter = 1;
 	stdout->offset = 0;
+	stdout->flags = O_WRONLY;
 	stdout->lock = lock_create("STDOUT lock");
 	newproc->filetable[1] = stdout;
+	//}
 
-
+	strvfs=kstrdup("con:");
 	// STDERR insertion :
-	vfs_open((char*) "con:", O_WRONLY, 0, &init);
-
+	int check3=vfs_open(strvfs, O_WRONLY, 0, &init);
+	kprintf("\nCheck 3 %d\n",check3);
+	//if(!check3)
+	//{
 	stderr->file = init;
 	stderr->counter = 1;
 	stderr->offset = 0;
+	stderr->flags = O_WRONLY;
 	stderr->lock = lock_create("STDERR lock");
 	newproc->filetable[2] = stderr;
+	//}
 
 
 	return newproc;
