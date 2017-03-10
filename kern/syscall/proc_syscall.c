@@ -26,10 +26,14 @@ int sys_fork(struct trapframe *tf, int *retval){
 
   const char *name = "Newly created process!";
 
+  newProc = fork_proc_create(name);
+
+  if(newProc == NULL){
+    return ENPROC;
+  }
+
   memcpy(trapframe, tf, sizeof(struct trapframe));
   //*trapframe = *tf;
-
-  newProc = fork_proc_create(name);
 
   //newProc->ppid=curproc->pid;
 
@@ -57,7 +61,7 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
 {
   //kprintf("\nWaitpid%d %d\n",pid,options);
 
-  if (pid == curproc->ppid || pid == curproc->pid) 
+  if (pid == curproc->ppid || pid == curproc->pid)
     return ECHILD;
 
   if(pid<=0)
@@ -81,7 +85,7 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
       return ECHILD;
     }
 
- 
+
 
   // Need to check exit status of the child before waiting on it.
   if(proctable[pid] == NULL)
@@ -97,22 +101,23 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
 
 
 
-  if(proctable[pid]->exit_status!=1) { // If child has not exited already
-  
+//   if(proctable[pid]->exit_status!=1) { // If child has not exited already
+
       P(proctable[pid]->proc_sem);  // wwait for child
-    }
-  
+//    }
+
 
   //P(proctable[pid]->proc_sem);
 
-  if (status != NULL) {
-    int check = copyout((const void *)&proctable[pid]->exit_code, (userptr_t)status, sizeof(int));
-    if (check) {
-      //proc_destroy(proctable[pid]);
-      //proctable[pid] = NULL;
-      return check;
-    }
-  }
+  //if (status != NULL) {
+    copyout((const void *)&proctable[pid]->exit_code, (userptr_t)status, sizeof(int));
+    //status = &proctable[pid]->exit_code;
+    // if (check) {
+    //   //proc_destroy(proctable[pid]);
+    //   //proctable[pid] = NULL;
+    //   return check;
+    // }
+  //}
 
   //if(check){}
 
@@ -138,14 +143,14 @@ int sys__exit(int exitcode){
       // Who will check on the parent ?
 
 
-      //if(proctable[curproc->ppid]->exit_status==0) 
+      //if(proctable[curproc->ppid]->exit_status==0)
       //{
       //Might need a KASSERT to make sure the process is not already exited
       //if(exitcode!=0)
         //curproc->exit_code=_MKWAIT_SIG(exitcode);
       //else
       curproc->exit_code=_MKWAIT_EXIT(exitcode);
-      curproc->exit_status=1;
+      //curproc->exit_status=1;
       V(curproc->proc_sem);
       //}
       //else

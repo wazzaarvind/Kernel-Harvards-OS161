@@ -91,8 +91,12 @@ proc_create(const char *name)
 
 	/* TODO : Get a PID for the newly created process, Maybe move to a counter based implementation*/
 	int i = 2;
-	while(proctable[i] != NULL){
+	while(proctable[i] != NULL && i <= 100){
 			i++;
+	}
+
+	if(i >= 100){
+		return NULL;
 	}
 
 	proc->pid = i;
@@ -114,6 +118,9 @@ fork_proc_create(const char *name)
 
 	 newProc = proc_create(name);
 
+	 if (newProc == NULL)	 {
+		 return NULL;
+	 }
 	 spinlock_acquire(&curproc->p_lock);
 	 if (curproc->p_cwd != NULL) {
 		 VOP_INCREF(curproc->p_cwd);
@@ -226,9 +233,9 @@ proc_destroy(struct proc *proc)
 	{
 		if(proc->filetable[i]!=NULL)
 		{
-			proc->filetable[i]->counter--;	
+			proc->filetable[i]->counter--;
 			//kprintf("\nCounter : %d",proc->filetable[i]->counter);
-			
+
 			if(proc->filetable[i]->counter==0)
 			{
 				lock_destroy(proc->filetable[i]->lock);
@@ -241,7 +248,7 @@ proc_destroy(struct proc *proc)
 	}
 
 	KASSERT(proc->p_numthreads == 0);
-	
+
 
 	/* Achuth edit - Remove the process table row */
 	proctable[proc->pid] = NULL;
@@ -332,7 +339,7 @@ proc_create_runprogram(const char *name)
 	int check2=vfs_open(strvfs, O_WRONLY, 0, &init);
 	kprintf("\nCheck 2 %d\n",check2);
 	//if(!check2)
-	//{	
+	//{
 	stdout->file = init;
 	stdout->counter = 1;
 	stdout->offset = 0;
