@@ -121,7 +121,7 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
 
 
   //status++;
-  proc_destroy(proctable[pid]);
+  //proc_destroy(proctable[pid]);
 
   proctable[pid]=NULL;
   *retval=pid;
