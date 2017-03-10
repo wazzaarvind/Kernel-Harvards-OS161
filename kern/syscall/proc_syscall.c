@@ -90,8 +90,8 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
   if(proctable[pid]->ppid!=curproc->pid) //does parent wait on child?
     return ECHILD;
 
-  if(proctable[pid]->exit_status==1)
-    return ESRCH;
+  //if(proctable[pid]->exit_status==1)
+    //return ESRCH;
 
 
 
