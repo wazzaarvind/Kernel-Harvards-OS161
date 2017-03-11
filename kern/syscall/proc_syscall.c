@@ -179,7 +179,7 @@ int sys_getpid(pid_t *retval){
 }
 
 int sys_execv(const char *progname, char **args){
-  kprintf("\nprograme %s args %s\n",progname,args[0]);
+  //kprintf("\nprograme %s args %s\n",progname,args[0]);
 
   if(progname==NULL)
     return EFAULT;
@@ -190,14 +190,15 @@ int sys_execv(const char *progname, char **args){
   //(void) **args;
   size_t length;
   char *program_kern=(char *)kmalloc(sizeof(char)*PATH_MAX); //might need to kmalloc
+
   if(program_kern==NULL)
     return ENOMEM;
   //casting the malloc to the right type, might not be required
- // program_kern=(char *)kmalloc(sizeof(char)*PATH_MAX);
+  // program_kern=(char *)kmalloc(sizeof(char)*PATH_MAX);
 
 
-  //First Copy Program into Kernel Memory, PATH_MAX is the maximum size of an instruction path
-   int check1=copyinstr((userptr_t)progname, program_kern, PATH_MAX, &length); //might need to check error for all these
+   //First Copy Program into Kernel Memory, PATH_MAX is the maximum size of an instruction path
+   int check1=copyinstr((userptr_t)progname, program_kern, PATH_MAX , &length); //might need to check error for all these
    if(check1)
    {
       kfree(program_kern);
@@ -214,50 +215,57 @@ int sys_execv(const char *progname, char **args){
     //kprintf("\nProgram Name is %s\n",program_kern);
 
    char **kernel_args=(char **)kmalloc(sizeof(char**));
-
-   if(kernel_args==NULL)
-    return ENOMEM;
+   if(kernel_args==NULL) {
+     kfree(kernel_args);
+     kfree(program_kern);
+     return ENOMEM;
+   }
 
    //Copy address/pointers from User to Kernel Memory
   int check2=copyin((userptr_t) args, kernel_args, sizeof(char **));
   if(check2)
    {
-    kfree(kernel_args);
+      kfree(kernel_args);
       kfree(program_kern);
       return EFAULT;
 
-   } 
+   }
+
    int i=0;
   for(i=0;args[i]!=NULL;i++)
   {
   //Copy each value in user memory to kernel memory
-    kernel_args[i] = (char *)kmalloc(sizeof(char)*PATH_MAX);
-    kprintf("args is %s",args[i]);
-    int check3=copyinstr((userptr_t) args[i],kernel_args[i], PATH_MAX, &length);
+    kernel_args[i] = (char *)kmalloc(sizeof(char)*PATH_MAX );
+    if(kernel_args[i] == NULL){
+      return ENOMEM;
+    }
+    //kprintf("args is %s",args[i]);
+    int check3 = copyinstr((userptr_t) args[i],kernel_args[i], PATH_MAX, &length);
     if(check3){
+      // Deallocate memory for kernel_args[i]
+      // for(int l = 0; args[l]!= NULL; l++){
+      //
+      // }
       kfree(kernel_args);
       kfree(program_kern);
-      return EFAULT;
+      return ENOMEM;
     }
   }
+
   int argc=i;
   //kprintf("\nArgc is %d\n",argc);
 
-  char **copyoutargs=(char **) kmalloc(sizeof(char **) * argc);
-  if(copyoutargs==NULL)
+  if(argc > ARG_MAX){
+    kfree(kernel_args);
+    kfree(program_kern);
     return ENOMEM;
+  }
 
 
   kernel_args[i]=NULL;
   //for(i=0;kernel_args[i]!=NULL;i++)
     //kprintf("\nKergnel args is %s\n",kernel_args[i]);
   //userptr_t *copyoutargs=NULL;
-
-
-
-
-
-
 
   //struct addrspace *as;
 	struct vnode *v;
@@ -266,21 +274,23 @@ int sys_execv(const char *progname, char **args){
 
 	/* Open the file. */
 	result = vfs_open(program_kern, O_RDONLY, 0, &v);
+
+  kfree(program_kern);
+
 	if (result) {
-        kfree(kernel_args);
-      kfree(program_kern);
-		return result;
+      kfree(kernel_args);
+		  return result;
 	}
 
   //New address space needs to be created
   //as_deactivate();
-  as_destroy(curproc->p_addrspace); 
+  as_destroy(curproc->p_addrspace);
   curproc->p_addrspace = NULL;
+
 	/* Create a new address space. */
 	curproc->p_addrspace = as_create();
 	if (curproc->p_addrspace == NULL) {
     kfree(kernel_args);
-      kfree(program_kern);
 		vfs_close(v);
 		return ENOMEM;
 	}
@@ -293,8 +303,6 @@ int sys_execv(const char *progname, char **args){
 	result = load_elf(v, &entrypoint);
 	if (result) {
     kfree(kernel_args);
-      kfree(program_kern);
-		/* p_addrspace will go away when curproc is destroyed */
 		vfs_close(v);
 		return result;
 	}
@@ -306,8 +314,6 @@ int sys_execv(const char *progname, char **args){
 	result = as_define_stack(curproc->p_addrspace, &stackptr);
 	if (result) {
     kfree(kernel_args);
-      kfree(program_kern);
-		/* p_addrspace will go away when curproc is destroyed */
 		return result;
 	}
 
@@ -324,7 +330,7 @@ int sys_execv(const char *progname, char **args){
 
       char *stack_copy=(char *)kmalloc(sizeof(char)*arg_length);
       //kprintf("\nStack Copy is %d\n",strlen(stack_copy));
-      stack_copy=kstrdup(kernel_args[i]);
+      //stack_copy=kstrdup(kernel_args[i]);
       int j=0;
       for(j=0;j<old_length;j++)
       {
@@ -346,37 +352,34 @@ int sys_execv(const char *progname, char **args){
       if(check4){
         kfree(stack_copy);
         kfree(kernel_args);
-      kfree(program_kern);
-          return check4;
-        }
+        return check4;
+      }
       //kprintf("\nStack Ptr is %s\n",(char *)stackptr);
       //kernel_args[i]=(char *)stackptr;
         //copyoutargs=(userptr_t*)stackptr;
-        copyoutargs[i]=(char *)stackptr;
+        kernel_args[i]=(char *)stackptr;
         i++;
+        kfree(stack_copy);
      }
      //kprintf("i is %d",i);
-        stackptr-=(4*sizeof(char)); //one null spot between args and pointers
+      stackptr -= 4; //one null spot between args and pointers
       int k=0;
       int count=8;
       for(k=i-1;k>=0;k--)
       {
         //kprintf("Sup");
-        stackptr-=sizeof(char *);
-        int check5=copyout((const void *)(copyoutargs+k),(userptr_t)stackptr,(sizeof(char *))); //copy pointers to the stack memories having the arguments
-        kprintf("\nKernel Arg is %s\n",*(copyoutargs+k));
+        stackptr -= 4;
+        int check5=copyout((const void *)(kernel_args+k),(userptr_t)stackptr,(sizeof(char *))); //copy pointers to the stack memories having the arguments
+        //kprintf("\nKernel Arg is %s\n",*(kernel_args+k));
         count+=8;
 
       if(check5){
         kfree(kernel_args);
-      kfree(program_kern);
         return check5;
       }
       }
-
       kfree(kernel_args);
-      kfree(program_kern);
-      kfree(copyoutargs);
+
       //kfree(stack_copy);
       //may need to do kfree's
 
