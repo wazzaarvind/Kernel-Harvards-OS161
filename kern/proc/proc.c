@@ -91,12 +91,11 @@ proc_create(const char *name)
 
 	/* TODO : Get a PID for the newly created process, Maybe move to a counter based implementation*/
 	int i = 2;
-	while(proctable[i] != NULL && i <= 100){
+	while(proctable[i] != NULL){
+		if(i == 100){
+			return NULL;
+		}
 			i++;
-	}
-
-	if(i >= 100){
-		return NULL;
 	}
 
 	proc->pid = i;
@@ -134,7 +133,11 @@ fork_proc_create(const char *name)
 	 //newProc->p_addrspace = as_create();
 
 	 // Copying over parent address space to child
-	 as_copy(curproc->p_addrspace, &newProc->p_addrspace);
+	 int check = as_copy(curproc->p_addrspace, &newProc->p_addrspace);
+
+	 if(check != 0){
+		 return NULL;
+	 }
 
 
 	 for(int i = 0; i < 64; i++){

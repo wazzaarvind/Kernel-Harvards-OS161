@@ -29,7 +29,7 @@ int sys_fork(struct trapframe *tf, int *retval){
   newProc = fork_proc_create(name);
 
   if(newProc == NULL){
-    return ENPROC;
+    return ENOMEM;
   }
 
   memcpy(trapframe, tf, sizeof(struct trapframe));
@@ -45,7 +45,11 @@ int sys_fork(struct trapframe *tf, int *retval){
   *retval=newProc->pid;
 
   // Unknown fourth arg - passing newproc id because - long int.
-  thread_fork(name, newProc, (void*)enter_forked_process, trapframe, newProc->pid);
+  int check = thread_fork(name, newProc, (void*)enter_forked_process, trapframe, newProc->pid);
+
+  if(check != 0){
+    return ENOMEM;
+  }
 
   //kprintf("Thread fork return %d",check);
 

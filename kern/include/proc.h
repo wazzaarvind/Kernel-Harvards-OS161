@@ -89,6 +89,8 @@ struct proc {
 	int exit_status; /* 0 - running, 1 - exited */
 	int exit_code;
 
+	int child_count; 
+
 	struct semaphore *proc_sem;
 
 	/* TODO: Needs a synchronization premitive for putting this process to sleep during pid_wait */
@@ -128,7 +130,7 @@ struct addrspace *proc_setas(struct addrspace *);
 
 /* Achuth edit - Adding a proc_create wrapper */
 
-struct proc *fork_proc_create(const char *name); 
+struct proc *fork_proc_create(const char *name);
 
 
 
