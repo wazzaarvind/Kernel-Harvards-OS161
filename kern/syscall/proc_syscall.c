@@ -12,6 +12,8 @@
 #include <addrspace.h>
 #include <kern/fcntl.h>
 #include <vfs.h>
+#include <limits.h>
+
 
 
 
@@ -178,7 +180,49 @@ int sys_getpid(pid_t *retval){
 
 int sys_execv(const char *progname, char **args){
 
-  (void) **args;
+  //(void) **args;
+  size_t length;
+  char *program_kern=(char *)kmalloc(sizeof(char)*PATH_MAX); //might need to kmalloc
+  //casting the malloc to the right type, might not be required
+ // program_kern=(char *)kmalloc(sizeof(char)*PATH_MAX);
+
+
+  //First Copy Program into Kernel Memory, PATH_MAX is the maximum size of an instruction path
+   int check1=copyinstr((userptr_t)progname, program_kern, PATH_MAX, &length); //might need to check error for all these
+   if(check1)
+      return check1;
+    kprintf("\nProgram Name is %s\n",program_kern);
+
+   char **kernel_args=(char **)kmalloc(sizeof(char**));
+
+   //Copy address/pointers from User to Kernel Memory
+  /*int check2=copyin((userptr_t) args, kernel_args, sizeof(char **));
+  if(check2)
+    return check2;*/
+   int i=0;
+  for(i=0;args[i]!=NULL;i++)
+  {
+  //Copy each value in user memory to kernel memory
+    kernel_args[i] = (char *)kmalloc(sizeof(char)*PATH_MAX);
+    int check3=copyinstr((userptr_t) args[i],kernel_args[i], PATH_MAX, &length);
+    if(check3)
+      return check3;
+  }
+  int argc=i;
+  kprintf("\nArgc is %d\n",argc);
+
+
+  kernel_args[i]=NULL;
+  for(i=0;kernel_args[i]!=NULL;i++)
+    kprintf("\nKergnel args is %s\n",kernel_args[i]);
+
+
+
+
+
+
+
+
   struct addrspace *as;
 	struct vnode *v;
 	vaddr_t entrypoint, stackptr;
@@ -219,8 +263,65 @@ int sys_execv(const char *progname, char **args){
 		return result;
 	}
 
+  i=0;
+     int arg_length=0,old_length=0;
+     while(kernel_args[i]!=NULL)
+     {
+      arg_length=strlen(kernel_args[i])+1; //for '\0'
+      kprintf("\nCurrent arg length is %d\n",arg_length);
+      old_length=arg_length;
+      if(arg_length%4!=0)
+        arg_length+=4-(arg_length%4); //padding areas
+      kprintf("\nNew arg length is %d\n",arg_length);
+
+      char stack_copy[100]="";//=(char *)kmalloc(sizeof(char)*arg_length);
+      //kprintf("\nStack Copy is %d\n",strlen(stack_copy));
+      int j=0;
+      for(j=0;j<old_length;j++)
+      {
+        //if(j<old_length)
+          stack_copy[j]=kernel_args[i][j]; //copy direct string
+          //kprintf("\nStack Copy is %d\n",strlen(stack_copy));
+      }
+      for(j=old_length;j<arg_length;j++)
+      {
+          //sprintf(stack_copy, "%s%c", stack_copy,'\0');
+          //strcat(stack_copy,'\0');
+          stack_copy[j]='\0'; //copy nulls
+          //kprintf("\nStack Copy is %c %d\n",stack_copy[j],j);
+      }
+        //kprintf("\nStack Copy is %c\n",stack_copy[j]);
+
+      kprintf("\nStack Copy is %d\n",strlen(stack_copy));
+      stackptr-=arg_length; //moving stack ptr down
+      int check4=copyout((const void *)stack_copy,(userptr_t)stackptr,(size_t)arg_length); //copy it back to user sapce
+      if(check4){
+          return check4;
+        }
+      kprintf("\nStack Ptr is %s\n",(char *)stackptr);
+        i++;
+     }
+        stackptr-=4; //one null spot between args and pointers
+      int k=0;
+      for(k=i-1;k>=0;k--)
+      {
+        stackptr-=4;
+        int check5=copyout((const void *)(kernel_args + i),(userptr_t)stackptr,(sizeof(char *))); //copy pointers to the stack memories having the arguments
+        //kprintf("\nStack Ptr is %s\n",(char *)stackptr);
+
+      if(check5){
+        return check5;
+      }
+      }
+      //may need to do kfree's
+
+
+
+
+
+
 	/* Warp to user mode. */
-	enter_new_process(0 /*argc*/, NULL /*userspace addr of argv*/,
+	enter_new_process(argc, (userptr_t)stackptr /*userspace addr of argv*/,
 			  NULL /*userspace addr of environment*/,
 			  stackptr, entrypoint);
 
