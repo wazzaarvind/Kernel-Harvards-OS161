@@ -52,9 +52,14 @@ main(void)
 	else
 	{
 		int status;
+
 		waitpid(pid, &status,0);
+
+
 		printf("\nHello from the parent process!\n");
+
 	}
+
 	 exit(0);;
 
 }
