@@ -179,10 +179,19 @@ int sys_getpid(pid_t *retval){
 }
 
 int sys_execv(const char *progname, char **args){
+  kprintf("\nprograme %s args %s\n",progname,args[0]);
+
+  if(progname==NULL)
+    return EFAULT;
+
+  if(args==NULL)
+    return EFAULT;
 
   //(void) **args;
   size_t length;
   char *program_kern=(char *)kmalloc(sizeof(char)*PATH_MAX); //might need to kmalloc
+  if(program_kern==NULL)
+    return ENOMEM;
   //casting the malloc to the right type, might not be required
  // program_kern=(char *)kmalloc(sizeof(char)*PATH_MAX);
 
@@ -190,31 +199,59 @@ int sys_execv(const char *progname, char **args){
   //First Copy Program into Kernel Memory, PATH_MAX is the maximum size of an instruction path
    int check1=copyinstr((userptr_t)progname, program_kern, PATH_MAX, &length); //might need to check error for all these
    if(check1)
+   {
+      kfree(program_kern);
       return check1;
-    kprintf("\nProgram Name is %s\n",program_kern);
+   }
+
+   if (length < 2 || length>PATH_MAX) {
+    kfree(program_kern);
+    return EINVAL;
+  }
+
+   //if (strcmp(progname,"") == 0)
+    //return EISDIR;
+    //kprintf("\nProgram Name is %s\n",program_kern);
 
    char **kernel_args=(char **)kmalloc(sizeof(char**));
 
+   if(kernel_args==NULL)
+    return ENOMEM;
+
    //Copy address/pointers from User to Kernel Memory
-  /*int check2=copyin((userptr_t) args, kernel_args, sizeof(char **));
+  int check2=copyin((userptr_t) args, kernel_args, sizeof(char **));
   if(check2)
-    return check2;*/
+   {
+    kfree(kernel_args);
+      kfree(program_kern);
+      return EFAULT;
+
+   } 
    int i=0;
   for(i=0;args[i]!=NULL;i++)
   {
   //Copy each value in user memory to kernel memory
     kernel_args[i] = (char *)kmalloc(sizeof(char)*PATH_MAX);
+    kprintf("args is %s",args[i]);
     int check3=copyinstr((userptr_t) args[i],kernel_args[i], PATH_MAX, &length);
-    if(check3)
-      return check3;
+    if(check3){
+      kfree(kernel_args);
+      kfree(program_kern);
+      return EFAULT;
+    }
   }
   int argc=i;
-  kprintf("\nArgc is %d\n",argc);
+  //kprintf("\nArgc is %d\n",argc);
+
+  char **copyoutargs=(char **) kmalloc(sizeof(char **) * argc);
+  if(copyoutargs==NULL)
+    return ENOMEM;
 
 
   kernel_args[i]=NULL;
-  for(i=0;kernel_args[i]!=NULL;i++)
-    kprintf("\nKergnel args is %s\n",kernel_args[i]);
+  //for(i=0;kernel_args[i]!=NULL;i++)
+    //kprintf("\nKergnel args is %s\n",kernel_args[i]);
+  //userptr_t *copyoutargs=NULL;
 
 
 
@@ -222,32 +259,41 @@ int sys_execv(const char *progname, char **args){
 
 
 
-
-  struct addrspace *as;
+  //struct addrspace *as;
 	struct vnode *v;
 	vaddr_t entrypoint, stackptr;
 	int result;
 
 	/* Open the file. */
-	result = vfs_open((char *)progname, O_RDONLY, 0, &v);
+	result = vfs_open(program_kern, O_RDONLY, 0, &v);
 	if (result) {
+        kfree(kernel_args);
+      kfree(program_kern);
 		return result;
 	}
 
+  //New address space needs to be created
+  //as_deactivate();
+  as_destroy(curproc->p_addrspace); 
+  curproc->p_addrspace = NULL;
 	/* Create a new address space. */
-	as = as_create();
-	if (as == NULL) {
+	curproc->p_addrspace = as_create();
+	if (curproc->p_addrspace == NULL) {
+    kfree(kernel_args);
+      kfree(program_kern);
 		vfs_close(v);
 		return ENOMEM;
 	}
 
 	/* Switch to it and activate it. */
-	proc_setas(as);
+	proc_setas(curproc->p_addrspace);
 	as_activate();
 
 	/* Load the executable. */
 	result = load_elf(v, &entrypoint);
 	if (result) {
+    kfree(kernel_args);
+      kfree(program_kern);
 		/* p_addrspace will go away when curproc is destroyed */
 		vfs_close(v);
 		return result;
@@ -257,8 +303,10 @@ int sys_execv(const char *progname, char **args){
 	vfs_close(v);
 
 	/* Define the user stack in the address space */
-	result = as_define_stack(as, &stackptr);
+	result = as_define_stack(curproc->p_addrspace, &stackptr);
 	if (result) {
+    kfree(kernel_args);
+      kfree(program_kern);
 		/* p_addrspace will go away when curproc is destroyed */
 		return result;
 	}
@@ -268,18 +316,18 @@ int sys_execv(const char *progname, char **args){
      while(kernel_args[i]!=NULL)
      {
       arg_length=strlen(kernel_args[i])+1; //for '\0'
-      kprintf("\nCurrent arg length is %d\n",arg_length);
+      //kprintf("\nCurrent arg length is %d\n",arg_length);
       old_length=arg_length;
       if(arg_length%4!=0)
         arg_length+=4-(arg_length%4); //padding areas
-      kprintf("\nNew arg length is %d\n",arg_length);
+      //kprintf("\nNew arg length is %d\n",arg_length);
 
-      char stack_copy[100]="";//=(char *)kmalloc(sizeof(char)*arg_length);
+      char *stack_copy=(char *)kmalloc(sizeof(char)*arg_length);
       //kprintf("\nStack Copy is %d\n",strlen(stack_copy));
+      stack_copy=kstrdup(kernel_args[i]);
       int j=0;
       for(j=0;j<old_length;j++)
       {
-        //if(j<old_length)
           stack_copy[j]=kernel_args[i][j]; //copy direct string
           //kprintf("\nStack Copy is %d\n",strlen(stack_copy));
       }
@@ -292,27 +340,44 @@ int sys_execv(const char *progname, char **args){
       }
         //kprintf("\nStack Copy is %c\n",stack_copy[j]);
 
-      kprintf("\nStack Copy is %d\n",strlen(stack_copy));
+      //kprintf("\nStack Copy is %d\n",strlen(stack_copy));
       stackptr-=arg_length; //moving stack ptr down
       int check4=copyout((const void *)stack_copy,(userptr_t)stackptr,(size_t)arg_length); //copy it back to user sapce
       if(check4){
+        kfree(stack_copy);
+        kfree(kernel_args);
+      kfree(program_kern);
           return check4;
         }
-      kprintf("\nStack Ptr is %s\n",(char *)stackptr);
+      //kprintf("\nStack Ptr is %s\n",(char *)stackptr);
+      //kernel_args[i]=(char *)stackptr;
+        //copyoutargs=(userptr_t*)stackptr;
+        copyoutargs[i]=(char *)stackptr;
         i++;
      }
-        stackptr-=4; //one null spot between args and pointers
+     //kprintf("i is %d",i);
+        stackptr-=(4*sizeof(char)); //one null spot between args and pointers
       int k=0;
+      int count=8;
       for(k=i-1;k>=0;k--)
       {
-        stackptr-=4;
-        int check5=copyout((const void *)(kernel_args + i),(userptr_t)stackptr,(sizeof(char *))); //copy pointers to the stack memories having the arguments
-        //kprintf("\nStack Ptr is %s\n",(char *)stackptr);
+        //kprintf("Sup");
+        stackptr-=sizeof(char *);
+        int check5=copyout((const void *)(copyoutargs+k),(userptr_t)stackptr,(sizeof(char *))); //copy pointers to the stack memories having the arguments
+        kprintf("\nKernel Arg is %s\n",*(copyoutargs+k));
+        count+=8;
 
       if(check5){
+        kfree(kernel_args);
+      kfree(program_kern);
         return check5;
       }
       }
+
+      kfree(kernel_args);
+      kfree(program_kern);
+      kfree(copyoutargs);
+      //kfree(stack_copy);
       //may need to do kfree's
 
 
