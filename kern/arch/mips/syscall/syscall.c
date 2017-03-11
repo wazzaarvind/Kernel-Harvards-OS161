@@ -174,11 +174,11 @@ syscall(struct trapframe *tf)
 			//kprintf("Error : %d\n", err);
 			}
 		break;
-		//
-		// case SYS_execv:
-		// 	err = sys_execv((const char *)tf->tf_a0, (char **)tf->tf_a1, &retval); //unsure if retval required
-		// break;
-		//
+
+		case SYS_execv:
+			err = sys_execv((const char *)tf->tf_a0, (char **)tf->tf_a1); //unsure if retval required
+		break;
+
 		case SYS__exit:
 			err = sys__exit((int)tf->tf_a0);
 		break;
@@ -234,7 +234,7 @@ syscall(struct trapframe *tf)
 void
 enter_forked_process(struct trapframe *tf,long unsigned int temp)
 {
-	// Have to use the variable to avoid the warnings. 
+	// Have to use the variable to avoid the warnings.
 	(void) temp;
 
 	struct trapframe trapframe = *tf;
