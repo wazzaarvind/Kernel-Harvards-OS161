@@ -119,7 +119,7 @@ int sys_open(char *path_file, int flags, mode_t mode, int *retval){
 		return check;
 	}
 
-  	
+
 
 	curproc->filetable[file_index]->offset=0;
 
@@ -164,6 +164,10 @@ int sys_dup2(int fd_old, int fd_new, int *retval){
 	if(curproc->filetable[fd_old]==NULL)
 		return EBADF;
 	//lock_acquire
+
+  // Loop and return EMFILE
+
+
 	if(curproc->filetable[fd_new]!=NULL)
 		sys_close(fd_new); //could cause error, might need to be dealt with
 	curproc->filetable[fd_new]=curproc->filetable[fd_old];

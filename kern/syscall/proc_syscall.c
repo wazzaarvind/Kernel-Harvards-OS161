@@ -14,7 +14,7 @@
 #include <vfs.h>
 #include <limits.h>
 
-
+//int counter=0;
 
 
 
@@ -235,12 +235,12 @@ int sys_execv(const char *progname, char **args){
   for(i=0;args[i]!=NULL;i++)
   {
   //Copy each value in user memory to kernel memory
-    kernel_args[i] = (char *)kmalloc(sizeof(char)*PATH_MAX );
+    kernel_args[i] = (char *)kmalloc(sizeof(char)*PATH_MAX*57);
     if(kernel_args[i] == NULL){
       return ENOMEM;
     }
     //kprintf("args is %s",args[i]);
-    int check3 = copyinstr((userptr_t) args[i],kernel_args[i], PATH_MAX, &length);
+    int check3 = copyinstr((userptr_t) args[i],kernel_args[i], PATH_MAX*56, &length);
     if(check3){
       // Deallocate memory for kernel_args[i]
       // for(int l = 0; args[l]!= NULL; l++){
@@ -318,6 +318,7 @@ int sys_execv(const char *progname, char **args){
 	}
 
   i=0;
+  int counter=0;
      int arg_length=0,old_length=0;
      while(kernel_args[i]!=NULL)
      {
@@ -327,6 +328,7 @@ int sys_execv(const char *progname, char **args){
       if(arg_length%4!=0)
         arg_length+=4-(arg_length%4); //padding areas
       //kprintf("\nNew arg length is %d\n",arg_length);
+      counter+=arg_length;
 
       char *stack_copy=(char *)kmalloc(sizeof(char)*arg_length);
       //kprintf("\nStack Copy is %d\n",strlen(stack_copy));
