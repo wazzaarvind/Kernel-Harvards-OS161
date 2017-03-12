@@ -16,11 +16,26 @@
 
 int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
 
+	//kprintf("BUFF IS %d",curproc->filetable[fd]->flags);
   //check if FD invalid, return EBDAF
   if(fd<0||fd>=OPEN_MAX)
   	return EBADF;
+
   if(curproc->filetable[fd]==NULL)
      	return EBADF;
+  if(buf==NULL||buf>=(void *)0x80000000||buf==(void *)0x40000000)
+  		return EFAULT;
+  	if((curproc->filetable[fd]->flags & O_ACCMODE)==O_RDONLY)
+  	{	
+     	*retval=-1;
+     	return EBADF;
+    }
+   /*if(curproc->filetable[fd]->flags!=O_WRONLY)
+    {
+    	kprintf("BUFF IS %d",curproc->filetable[fd]->flags);
+     	*retval=-1;
+     	return EBADF;
+     }*/
      //kprintf("Flag is %d",curproc->filetable[fd]->flags);
    /*if(curproc->filetable[fd]->flags!=O_WRONLY)
    {
@@ -52,7 +67,7 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
   int err = VOP_WRITE(curproc->filetable[fd]->file, &uioWrite);
 
   if(err){
-      kprintf("\nError!!\n");
+      //kprintf("\nError!!\n");
 	    lock_release(curproc->filetable[fd]->lock);
 	    return err;
   }
@@ -66,16 +81,24 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
 
 int sys_read(int fd, void *buf, size_t buflen, ssize_t *retval){
 
-
+	
 	if(fd<0||fd>=OPEN_MAX)
         	return EBADF;
      if(curproc->filetable[fd]==NULL)
      	return EBADF;
-     //if(curproc->filetable[fd]->flags==O_WRONLY)
-     	//return EBADF;
+     if(buf==NULL||buf>=(void *)0x80000000||buf==(void *)0x40000000)
+  		return EFAULT;
+  	//if(buf==(void *)0x40000000)return EFAULT;
+     if((curproc->filetable[fd]->flags & O_ACCMODE)==O_WRONLY)
+     {
+     	*retval=-1;
+     	return EBADF;
+     }
      //kprintf("FLag is %d",curproc->filetable[fd]->flags);
 	  struct uio uioRead;
   	struct iovec iov;
+  	
+  	
   	//struct vnode *inFile= kmalloc(sizeof(inFile));
 
   lock_acquire(curproc->filetable[fd]->lock);
@@ -140,6 +163,7 @@ int sys_open(char *path_file, int flags, mode_t mode, int *retval){
 
 
 	curproc->filetable[file_index]->offset=0;
+	curproc->filetable[file_index]->flags=flags;
 
 	curproc->filetable[file_index]->counter=1;
 	curproc->filetable[file_index]->lock=lock_create(path_file);
