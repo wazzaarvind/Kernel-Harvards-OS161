@@ -187,6 +187,13 @@ int sys_execv(const char *progname, char **args){
   if(args==NULL)
     return EFAULT;
 
+  //int no_of_elements;
+  int u=0;
+  for(u=0;args[u]!=NULL;u++)
+  {
+
+  }
+
   //(void) **args;
   size_t length;
   char *program_kern=(char *)kmalloc(sizeof(char)*PATH_MAX); //might need to kmalloc
@@ -214,33 +221,34 @@ int sys_execv(const char *progname, char **args){
     //return EISDIR;
     //kprintf("\nProgram Name is %s\n",program_kern);
 
-   char **kernel_args=(char **)kmalloc(sizeof(char**));
+   char **kernel_args=(char **)kmalloc(sizeof(char**)*u);
    if(kernel_args==NULL) {
      kfree(kernel_args);
      kfree(program_kern);
      return ENOMEM;
    }
-
+  
    //Copy address/pointers from User to Kernel Memory
-  int check2=copyin((userptr_t) args, kernel_args, sizeof(char **));
+  /*int check2=copyin((userptr_t) args, kernel_args, sizeof(char **));
   if(check2)
    {
       kfree(kernel_args);
       kfree(program_kern);
       return EFAULT;
 
-   }
-
+   }*/
    int i=0;
   for(i=0;args[i]!=NULL;i++)
   {
+
+ 
   //Copy each value in user memory to kernel memory
-    kernel_args[i] = (char *)kmalloc(sizeof(char)*PATH_MAX*57);
+    kernel_args[i] = (char *)kmalloc(sizeof(char)*strlen(args[i])+1); //might need dummy operation for size //length
     if(kernel_args[i] == NULL){
       return ENOMEM;
     }
     //kprintf("args is %s",args[i]);
-    int check3 = copyinstr((userptr_t) args[i],kernel_args[i], PATH_MAX*56, &length);
+    int check3 = copyinstr((userptr_t) args[i],kernel_args[i], strlen(args[i])+1, &length); //strlen(kernel_args[i])+1 //ARG_MAX
     if(check3){
       // Deallocate memory for kernel_args[i]
       // for(int l = 0; args[l]!= NULL; l++){
