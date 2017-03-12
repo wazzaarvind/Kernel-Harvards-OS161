@@ -17,9 +17,21 @@
 int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
 
   //check if FD invalid, return EBDAF
-  if(fd<0||fd>OPEN_MAX)
+  if(fd<0||fd>=OPEN_MAX)
   	return EBADF;
+  if(curproc->filetable[fd]==NULL)
+     	return EBADF;
+     //kprintf("Flag is %d",curproc->filetable[fd]->flags);
+   /*if(curproc->filetable[fd]->flags!=O_WRONLY)
+   {
+   	kprintf("\nHi\n");
+   	return EBADF;
+   }*/
 
+   //check for invalid and kernel space buffer?
+
+   //if(buf==NULL)
+   	//return EFAULT;
   /*Achuth edits : Fetching the stdout file handle and writing to the file.*/
 
   struct uio uioWrite;
@@ -54,9 +66,14 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
 
 int sys_read(int fd, void *buf, size_t buflen, ssize_t *retval){
 
-	if(fd<0||fd>OPEN_MAX)
-        	return EBADF;
 
+	if(fd<0||fd>=OPEN_MAX)
+        	return EBADF;
+     if(curproc->filetable[fd]==NULL)
+     	return EBADF;
+     //if(curproc->filetable[fd]->flags==O_WRONLY)
+     	//return EBADF;
+     //kprintf("FLag is %d",curproc->filetable[fd]->flags);
 	  struct uio uioRead;
   	struct iovec iov;
   	//struct vnode *inFile= kmalloc(sizeof(inFile));
@@ -88,6 +105,7 @@ int sys_read(int fd, void *buf, size_t buflen, ssize_t *retval){
 
 
 int sys_open(char *path_file, int flags, mode_t mode, int *retval){
+
 
 	int file_index=3;
 
@@ -136,16 +154,20 @@ int sys_open(char *path_file, int flags, mode_t mode, int *retval){
 
 int sys_close(int fd){
 
-	if(fd<0||fd>OPEN_MAX)
-        	return EBADF;
+	//kprintf("FD is %d",fd);
 
-  	kprintf("Decrementing counter");
+	if(fd<0||fd>=OPEN_MAX)
+        	return EBADF;
+     if(curproc->filetable[fd]==NULL)
+     	return EBADF;
+
+  	//kprintf("Decrementing counter");
   	if(curproc->filetable[fd]->counter!=0)
 	curproc->filetable[fd]->counter--;
 
 	if(curproc->filetable[fd]->counter == 0 && fd>2)
 	{
-    	kprintf("LOCK DESTROY : %d", curproc->pid);
+    	//kprintf("LOCK DESTROY : %d", curproc->pid);
 		lock_destroy(curproc->filetable[fd]->lock);
     	vfs_close(curproc->filetable[fd]->file);
     	kfree(curproc->filetable[fd]);
@@ -156,9 +178,9 @@ int sys_close(int fd){
 
 int sys_dup2(int fd_old, int fd_new, int *retval){
 
-	if(fd_new>OPEN_MAX)
-		return EMFILE;
-	if(fd_old<0||fd_old>OPEN_MAX||fd_new<0||fd_new>OPEN_MAX)
+	if(fd_new<0||fd_new>=OPEN_MAX)
+		return EBADF;
+	if(fd_old<0||fd_old>=OPEN_MAX)
 		return EBADF;
 
 	if(curproc->filetable[fd_old]==NULL)
@@ -181,7 +203,7 @@ int sys_dup2(int fd_old, int fd_new, int *retval){
 int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos){
 
 	struct stat *stats_file=kmalloc(sizeof(struct stat));
-	if(fd<0||fd>OPEN_MAX||curproc->filetable[fd]==NULL)
+	if(fd<0||fd>=OPEN_MAX||curproc->filetable[fd]==NULL)
 		return EBADF;
 
 	//struct vnode *lseek_vn= kmalloc(sizeof(lseek_vn));
@@ -191,10 +213,18 @@ int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos){
 		return ESPIPE;
 
 	if(whence==SEEK_SET)
-		curproc->filetable[fd]->offset=pos; //might need to change type of offset in proc.h to off_t
+	{	curproc->filetable[fd]->offset=pos; //might need to change type of offset in proc.h to off_t
+		if(curproc->filetable[fd]->offset<0)
+			return EINVAL;
+	}
+
 
 	else if(whence==SEEK_CUR)
+	{
 		curproc->filetable[fd]->offset+=pos;
+		if(curproc->filetable[fd]->offset<0)
+			return EINVAL;
+	}
 	else if(whence==SEEK_END)
 	{
 		int check1=VOP_STAT(curproc->filetable[fd]->file,stats_file);
@@ -202,7 +232,11 @@ int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos){
 			curproc->filetable[fd]->offset=pos+stats_file->st_size;
 		else
 			return check1;
+		if(curproc->filetable[fd]->offset<0)
+			return EINVAL;
 	}
+	else
+		return EINVAL;
 
 	*new_pos=curproc->filetable[fd]->offset;
 

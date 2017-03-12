@@ -78,15 +78,13 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
     return ESRCH;
 
 
-  //if (pid > PID_MAX || pid < PID_MIN) {
-    //return ESRCH;
+  if (pid > PID_MAX)
+    return ESRCH;
   //}
 
 
 
-  if(status==NULL)
-    return EFAULT;
-
+  
   if(options!=0)
     return EINVAL;
 
@@ -119,7 +117,7 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
 
   //P(proctable[pid]->proc_sem);
 
-  //if (status != NULL) {
+  if(status != NULL) 
     copyout((const void *)&proctable[pid]->exit_code, (userptr_t)status, sizeof(int));
     //status = &proctable[pid]->exit_code;
     // if (check) {
@@ -183,6 +181,7 @@ int sys_execv(const char *progname, char **args){
 
   if(progname==NULL)
     return EFAULT;
+
 
   if(args==NULL)
     return EFAULT;
