@@ -192,22 +192,27 @@ int sys_execv(const char *progname, char **args){
 
 
 
-  if(progname==NULL||args==NULL||progname==(void *)0x40000000||progname==(void *)0x80000000||args ==(void*)0x40000000||args==(void *)0x80000000||args>=(char**)0x80000000||progname>=(char *)0x80000000)
+  if(progname==NULL||args==NULL||progname==(void *)0x40000000||progname==(void *)0x80000000||args==(void*)0x40000000||args==(char **)0x40000000||args>=(char **)0x80000000||(void *)progname>=(void *)0x80000000)
     return EFAULT;
 
 
   //int no_of_elements;
   int u=0;
+  if(args[0] == NULL){
+    return EFAULT;
+  }
+
+
   for(u=0;args[u]!=NULL;u++)
   {
-
-    if((args[u]==(void*)0x400000000)||(args[u]==(char*)0x80000000))
+    if((args[u]==(char*)0x40000000)||(args[u]>=(char*)0x80000000))
     {
-      //kprintf("\nhi\n");
-      //kfree(kernel_args);
       return EFAULT;
     }
+
   }
+
+  kprintf("\nWorks\n");
 
   //(void) **args;
   size_t length;
@@ -224,7 +229,7 @@ int sys_execv(const char *progname, char **args){
    if(check1)
    {
       kfree(program_kern);
-      return check1;
+      return EFAULT;
    }
 
    if (length < 2 || length>PATH_MAX) {
@@ -232,11 +237,17 @@ int sys_execv(const char *progname, char **args){
     return EINVAL;
   }
 
+  kprintf("\nWorks1\n");
+
+
    //if (strcmp(progname,"") == 0)
     //return EISDIR;
     //kprintf("\nProgram Name is %s\n",program_kern);
 
    char **kernel_args=(char **)kmalloc(sizeof(char**)*u);
+
+   kprintf("\nWorks2\n");
+
    if(kernel_args==NULL) {
      kfree(kernel_args);
      kfree(program_kern);
@@ -252,14 +263,18 @@ int sys_execv(const char *progname, char **args){
       return EFAULT;
 
    }
-   int i=0;
+  int i=0;
   for(i=0;args[i]!=NULL;i++)
   {
 
   //Copy each value in user memory to kernel memory
+    kprintf("ARGS i : %p", args[i]);
+    if(args[i] == (char *)0x40000000||args[i] >= (char *)0x80000000){
+      return EFAULT;
+    }
     kernel_args[i] = (char *)kmalloc(sizeof(char)*strlen(args[i])+1); //might need dummy operation for size //length
     if(kernel_args[i] == NULL){
-      return ENOMEM;
+      return EFAULT;
     }
     //kprintf("args is %s",args[i]);
     int check3 = copyinstr((userptr_t) args[i],kernel_args[i], strlen(args[i])+1, &length); //strlen(kernel_args[i])+1 //ARG_MAX
@@ -270,9 +285,11 @@ int sys_execv(const char *progname, char **args){
       // }
       kfree(kernel_args);
       kfree(program_kern);
-      return ENOMEM;
+      return EFAULT;
     }
   }
+  kprintf("\nWorks2\n");
+
 
   int argc=i;
   //kprintf("\nArgc is %d\n",argc);
