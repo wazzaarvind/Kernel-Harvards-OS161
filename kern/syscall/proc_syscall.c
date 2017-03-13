@@ -192,7 +192,7 @@ int sys_execv(const char *progname, char **args){
   
   
 
-  if(progname==NULL||args==NULL||progname==(void *)0x40000000||progname==(void *)0x80000000||(void*)args ==(void*)0x40000000||args==(void *)0x80000000||args>=(char**)0x80000000||progname>=(char *)0x80000000)
+  if(progname==NULL||args==NULL||progname==(void *)0x40000000||progname==(void *)0x80000000||args ==(void*)0x40000000||args==(void *)0x80000000)||args>=(char**)0x80000000||progname>=(char *)0x80000000)
     return EFAULT;
 
 
@@ -244,14 +244,14 @@ int sys_execv(const char *progname, char **args){
    }
   
    //Copy address/pointers from User to Kernel Memory
-  /*int check2=copyin((userptr_t) args, kernel_args, sizeof(char **));
+  int check2=copyin((userptr_t) args, kernel_args, sizeof(char **));
   if(check2)
    {
       kfree(kernel_args);
       kfree(program_kern);
       return EFAULT;
 
-   }*/
+   }
    int i=0;
   for(i=0;args[i]!=NULL;i++)
   {
@@ -424,145 +424,3 @@ int sys_execv(const char *progname, char **args){
 
 }
 
-// int sys_execv(const char *program, char **args)
-// {
-//   size_t length;
-//   char *program_kern; //might need to kmalloc
-
-
-//   //First Copy Program into Kernel Memory, PATH_MAX is the maximum size of an instruction path
-//   int check1=copyinstr((userptr_t)program, program_kern, PATH_MAX, &length); //might need to check error for all these
-
-
-//   char **kernel_args=(char **)kmalloc(sizeof(char**));
-
-//   //Copy address/pointers from User to Kernel Memory
-//   int check2=copyin((userptr_t) args, kernel_rgs, sizeof(char **));
-
-//   int i=0;
-//   for(i=0;args[i]!=NULL;i++)
-//   {
-//     //Copy each value in user memory to kernel memory
-//     kernel_args[i] = (char *)kmalloc(sizeof(char)*PATH_MAX);
-//     int check3=copyinstr((userptr_t) args[i],kernel_args[i], PATH_MAX, &length);
-//   }
-
-//   kernel_args[i]=NULL;
-
-//   //Do RunProgram activities
-
-
-//   struct addrspace *as;
-//   struct vnode *v;
-//   vaddr_t entrypoint, stackptr;
-
-//   int result;
-
-//   /* Open the file. */
-//   result = vfs_open(progname, O_RDONLY, 0, &v);
-//   if (result) {
-
-//     //Program has ended,might need to deallocate memory
-//     return result;
-//   }
-
-
-
-
-
-//    We should be a new process.
-//   KASSERT(proc_getas() == NULL);
-
-//   /* Create a new address space. */
-//   as = as_create();
-//   if (as == NULL) {
-//     vfs_close(v);
-//     return ENOMEM;
-//   }
-
-//   /* Switch to it and activate it. */
-//   proc_setas(as);
-//   as_activate();
-
-//   /* Load the executable. */
-//   result = load_elf(v, &entrypoint);
-//   if (result) {
-//     //might need to deallocate memory
-//     /* p_addrspace will go away when curproc is destroyed */
-//     vfs_close(v);
-//     return result;
-//   }
-
-//   /* Done with the file now. */
-//   vfs_close(v);
-
-//   result = as_define_stack(as, &stackptr);
-//   if (result) {
-
-//     //might need to deallocate space
-//     /* p_addrspace will go away when curproc is destroyed */
-//     return result;
-//   }
-
-//   //Have to copy arguments from Kernel Space to User Space and use those as parameters in enter_new_process
-
-
-     /*int i=0;
-     int arg_length=0,old_length=0;
-     while(args[i]!=NULL)
-     {
-      arg_length=strlen(args[i]+1);
-      old_length=strlen(args[i]+1);
-      if(arg_length%4!=0)
-        arg_length+=4-(arg_length%4);
-
-      char *stack_copy=kmalloc(sizeof(arg_length));
-      int j=0;
-      for(j=0;j<arg_length;j++)
-      {
-        if(j<old_length)
-          stack_copy[j]=args[i][j];
-        else
-          stack_copy[j]='\0';
-
-      }
-      stackptr-=arg_length;
-      int check4=copyout((const void *)stack_copy,(userptr_t)stackptr,(size_t)arg_length);
-      if(check4){
-
-        }
-        i++;
-     }
-      //if(argv[i]==NULL){
-        stackptr-=4;
-      //}
-
-      int k=0;
-      for(k=i-1;k>=0;k--)
-      {
-        stackptr = stackptr - sizeof(char*);
-        int check5=copyout((const void *)(args + i),(userptr_t)stackptr,(sizeof(char *)));
-      if(check5){
-
-      }
-      }
-      //may need to do kfree's
-
-
-
-      //Have to copy all pointers
-
-
-     }*/
-
-
-//   /* Warp to user mode. */
-//   enter_new_process(0 /*argc*/, NULL /*userspace addr of argv*/,
-//         NULL /*userspace addr of environment*/,
-//         stackptr, entrypoint);
-
-//   /* enter_new_process does not return. */
-//   panic("enter_new_process returned\n");
-//   return EINVAL;
-
-// }

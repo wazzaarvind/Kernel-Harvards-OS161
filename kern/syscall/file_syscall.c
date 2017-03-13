@@ -30,23 +30,7 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
      	*retval=-1;
      	return EBADF;
     }
-   /*if(curproc->filetable[fd]->flags!=O_WRONLY)
-    {
-    	kprintf("BUFF IS %d",curproc->filetable[fd]->flags);
-     	*retval=-1;
-     	return EBADF;
-     }*/
-     //kprintf("Flag is %d",curproc->filetable[fd]->flags);
-   /*if(curproc->filetable[fd]->flags!=O_WRONLY)
-   {
-   	kprintf("\nHi\n");
-   	return EBADF;
-   }*/
 
-   //check for invalid and kernel space buffer?
-
-   //if(buf==NULL)
-   	//return EFAULT;
   /*Achuth edits : Fetching the stdout file handle and writing to the file.*/
 
   struct uio uioWrite;
