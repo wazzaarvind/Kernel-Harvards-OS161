@@ -87,12 +87,12 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
 
 
 
-  
+
   if(options!=0)
     return EINVAL;
 
 
-    
+
 
 
 
@@ -124,10 +124,10 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
 
   //P(proctable[pid]->proc_sem);
 
-  if(status != NULL) 
+  if(status != NULL)
     copyout((const void *)&proctable[pid]->exit_code, (userptr_t)status, sizeof(int));
 
-  
+
     //status = &proctable[pid]->exit_code;
     // if (check) {
     //   //proc_destroy(proctable[pid]);
@@ -189,10 +189,10 @@ int sys_execv(const char *progname, char **args){
   //kprintf("\nprograme %s args %s\n",progname,args[0]);
   //kprintf("Args is %p",args[0]);
 
-  
-  
 
-  if(progname==NULL||args==NULL||progname==(void *)0x40000000||progname==(void *)0x80000000||args ==(void*)0x40000000||args==(void *)0x80000000)||args>=(char**)0x80000000||progname>=(char *)0x80000000)
+
+
+  if(progname==NULL||args==NULL||progname==(void *)0x40000000||progname==(void *)0x80000000||args ==(void*)0x40000000||args==(void *)0x80000000||args>=(char**)0x80000000||progname>=(char *)0x80000000)
     return EFAULT;
 
 
@@ -217,7 +217,7 @@ int sys_execv(const char *progname, char **args){
     return ENOMEM;
   //casting the malloc to the right type, might not be required
   // program_kern=(char *)kmalloc(sizeof(char)*PATH_MAX);
-  
+
 
    //First Copy Program into Kernel Memory, PATH_MAX is the maximum size of an instruction path
    int check1=copyinstr((userptr_t)progname, program_kern, PATH_MAX , &length); //might need to check error for all these
@@ -242,7 +242,7 @@ int sys_execv(const char *progname, char **args){
      kfree(program_kern);
      return ENOMEM;
    }
-  
+
    //Copy address/pointers from User to Kernel Memory
   int check2=copyin((userptr_t) args, kernel_args, sizeof(char **));
   if(check2)
@@ -423,4 +423,3 @@ int sys_execv(const char *progname, char **args){
 
 
 }
-
