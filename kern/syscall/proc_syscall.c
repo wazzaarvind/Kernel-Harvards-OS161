@@ -197,22 +197,8 @@ int sys_execv(const char *progname, char **args){
 
 
   //int no_of_elements;
-  int u=0;
-  if(args[0] == NULL){
-    return EFAULT;
-  }
 
-
-  for(u=0;args[u]!=NULL;u++)
-  {
-    if((args[u]==(char*)0x40000000)||(args[u]>=(char*)0x80000000))
-    {
-      return EFAULT;
-    }
-
-  }
-
-  kprintf("\nWorks\n");
+  //kprintf("\nWorks\n");
 
   //(void) **args;
   size_t length;
@@ -237,16 +223,28 @@ int sys_execv(const char *progname, char **args){
     return EINVAL;
   }
 
-  kprintf("\nWorks1\n");
+  //kprintf("\nWorks1\n");
 
 
    //if (strcmp(progname,"") == 0)
     //return EISDIR;
     //kprintf("\nProgram Name is %s\n",program_kern);
 
+    // Moved sanity check on args down. 
+    int u=0;
+    for(u=0;args[u]!=NULL;u++)
+    {
+      //kprintf(" POINTER %p\n", args[u]);
+      if((args[u]==(void*)0x40000000)||((void *)args[u]>=(void*)0x80000000))
+      {
+        return EFAULT;
+      }
+
+    }
+
    char **kernel_args=(char **)kmalloc(sizeof(char**)*u);
 
-   kprintf("\nWorks2\n");
+   //kprintf("\nWorks2\n");
 
    if(kernel_args==NULL) {
      kfree(kernel_args);
@@ -268,10 +266,8 @@ int sys_execv(const char *progname, char **args){
   {
 
   //Copy each value in user memory to kernel memory
-    kprintf("ARGS i : %p", args[i]);
-    if(args[i] == (char *)0x40000000||args[i] >= (char *)0x80000000){
-      return EFAULT;
-    }
+    //kprintf("ARGS i : %p", args[i]);
+
     kernel_args[i] = (char *)kmalloc(sizeof(char)*strlen(args[i])+1); //might need dummy operation for size //length
     if(kernel_args[i] == NULL){
       return EFAULT;
@@ -288,7 +284,7 @@ int sys_execv(const char *progname, char **args){
       return EFAULT;
     }
   }
-  kprintf("\nWorks2\n");
+  //kprintf("\nWorks2\n");
 
 
   int argc=i;
