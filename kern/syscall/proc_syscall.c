@@ -24,11 +24,6 @@ int sys_fork(struct trapframe *tf, int *retval){
   //kprintf("\n Fork sys call\n");
   struct proc *newProc;
   struct trapframe *trapframe = kmalloc(sizeof(struct trapframe));
-  //void *trapframe;
-
-  //(void) tf;
-  // thread for the newly created process
-  //struct thread *newthread;
 
   const char *name = "Newly created process!";
 
@@ -39,14 +34,7 @@ int sys_fork(struct trapframe *tf, int *retval){
   }
 
   memcpy(trapframe, tf, sizeof(struct trapframe));
-  //*trapframe = *tf;
 
-  //newProc->ppid=curproc->pid;
-
-  //kprintf("\n Just before fork \n");
-
-  //kprintf("\n PID : %d\n",newProc->pid);
-  //kprintf("\n PID parent: %d\n",curproc->pid);
 
   *retval=newProc->pid;
 
@@ -103,8 +91,6 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
   if(proctable[pid]->ppid!=curproc->pid) //does parent wait on child?
     return ECHILD;
 
-  //if(proctable[pid]->exit_status==1)
-    //return ESRCH;
   if (proctable[pid]->ppid == pid) {
       return ECHILD;
     }
@@ -116,34 +102,19 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
 
   if(status==(void *)0x40000000||status==(void *)0x80000000)
     return EFAULT;
-//   if(proctable[pid]->exit_status!=1) { // If child has not exited already
+
 
       P(proctable[pid]->proc_sem);  // wwait for child
 //    }
 
 
-  //P(proctable[pid]->proc_sem);
+
 
   if(status != NULL)
     copyout((const void *)&proctable[pid]->exit_code, (userptr_t)status, sizeof(int));
 
 
-    //status = &proctable[pid]->exit_code;
-    // if (check) {
-    //   //proc_destroy(proctable[pid]);
-    //   //proctable[pid] = NULL;
-    //   return check;
-    // }
-  //}
 
-  //if(check){}
-
-
-  //&status=proctable[pid]->exit_code; //_MKWAIT_EXIT
-
-
-  //status++;
-  //proc_destroy(proctable[pid]);
 
   proctable[pid]=NULL;
   *retval=pid;
@@ -155,24 +126,10 @@ int sys__exit(int exitcode){
 
       //kprintf("\nEXIT %d\n",exitcode);
       KASSERT(curproc->exit_status!=1);
-      // Ensure not already exited
 
-      // Who will check on the parent ?
-
-
-      //if(proctable[curproc->ppid]->exit_status==0)
-      //{
-      //Might need a KASSERT to make sure the process is not already exited
-      //if(exitcode!=0)
-        //curproc->exit_code=_MKWAIT_SIG(exitcode);
-      //else
       curproc->exit_code=_MKWAIT_EXIT(exitcode);
       //curproc->exit_status=1;
       V(curproc->proc_sem);
-      //}
-      //else
-        //proc_destroy(curproc);
-      //V(proctable[curproc->pid]->proc_sem);
 
       thread_exit();
       //how to actually exit?
@@ -223,12 +180,7 @@ int sys_execv(const char *progname, char **args){
     return EINVAL;
   }
 
-  //kprintf("\nWorks1\n");
 
-
-   //if (strcmp(progname,"") == 0)
-    //return EISDIR;
-    //kprintf("\nProgram Name is %s\n",program_kern);
 
     // Moved sanity check on args down. 
     int u=0;
@@ -252,15 +204,7 @@ int sys_execv(const char *progname, char **args){
      return ENOMEM;
    }
 
-   //Copy address/pointers from User to Kernel Memory
-  int check2=copyin((userptr_t) args, kernel_args, sizeof(char **));
-  if(check2)
-   {
-      kfree(kernel_args);
-      kfree(program_kern);
-      return EFAULT;
 
-   }
   int i=0;
   for(i=0;args[i]!=NULL;i++)
   {
@@ -391,9 +335,7 @@ int sys_execv(const char *progname, char **args){
         kfree(kernel_args);
         return check4;
       }
-      //kprintf("\nStack Ptr is %s\n",(char *)stackptr);
-      //kernel_args[i]=(char *)stackptr;
-        //copyoutargs=(userptr_t*)stackptr;
+
         kernel_args[i]=(char *)stackptr;
         i++;
         kfree(stack_copy);
