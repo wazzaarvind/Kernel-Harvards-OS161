@@ -14,6 +14,8 @@
 #include <kern/fcntl.h>
 #include <kern/stat.h>
 
+// Achuth edit - Adding kfree on errors.
+
 int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
 
 	//kprintf("BUFF IS %d",curproc->filetable[fd]->flags);
@@ -132,11 +134,13 @@ int sys_open(char *path_file, int flags, mode_t mode, int *retval){
     return EFAULT;
   }
 
-  	curproc->filetable[file_index]=kmalloc(sizeof(struct filehandle));
-	int check=vfs_open(buf,flags, mode, &curproc->filetable[file_index]->file); // or curproc->filetable[index]->file instead of open_vn
+  curproc->filetable[file_index]=kmalloc(sizeof(struct filehandle));
+
+  int check=vfs_open(buf,flags, mode, &curproc->filetable[file_index]->file); // or curproc->filetable[index]->file instead of open_vn
 
 	if(check!=0)
 	{
+    kfree(curproc->filetable[file_index]->file);
 		return check;
 	}
 
@@ -166,9 +170,9 @@ int sys_close(int fd){
  	        return EBADF;
 
   	//kprintf("Decrementing counter");
-  	if(curproc->filetable[fd]->counter!=0)
-	curproc->filetable[fd]->counter--;
-
+  if(curproc->filetable[fd]->counter!=0){
+	     curproc->filetable[fd]->counter--;
+  }
 	if(curproc->filetable[fd]->counter == 0 && fd>2)
 	{
 	 lock_destroy(curproc->filetable[fd]->lock);
