@@ -91,11 +91,6 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
   if(options!=0)
     return EINVAL;
 
-
-
-
-
-
   // Need to check exit status of the child before waiting on it.
   if(proctable[pid] == NULL)
     return ESRCH;
@@ -230,7 +225,7 @@ int sys_execv(const char *progname, char **args){
     //return EISDIR;
     //kprintf("\nProgram Name is %s\n",program_kern);
 
-    // Moved sanity check on args down. 
+    // Moved sanity check on args down.
     int u=0;
     for(u=0;args[u]!=NULL;u++)
     {

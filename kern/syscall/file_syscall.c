@@ -26,7 +26,7 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
   if(buf==NULL||buf>=(void *)0x80000000||buf==(void *)0x40000000)
   		return EFAULT;
   	if((curproc->filetable[fd]->flags & O_ACCMODE)==O_RDONLY)
-  	{	
+  	{
      	*retval=-1;
      	return EBADF;
     }
@@ -65,25 +65,21 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
 
 int sys_read(int fd, void *buf, size_t buflen, ssize_t *retval){
 
-	
+
 	if(fd<0||fd>=OPEN_MAX)
         	return EBADF;
      if(curproc->filetable[fd]==NULL)
      	return EBADF;
      if(buf==NULL||buf>=(void *)0x80000000||buf==(void *)0x40000000)
   		return EFAULT;
-  	//if(buf==(void *)0x40000000)return EFAULT;
      if((curproc->filetable[fd]->flags & O_ACCMODE)==O_WRONLY)
      {
      	*retval=-1;
      	return EBADF;
      }
-     //kprintf("FLag is %d",curproc->filetable[fd]->flags);
 	  struct uio uioRead;
   	struct iovec iov;
-  	
-  	
-  	//struct vnode *inFile= kmalloc(sizeof(inFile));
+
 
   lock_acquire(curproc->filetable[fd]->lock);
 
@@ -166,8 +162,8 @@ int sys_close(int fd){
 
 	if(fd<0||fd>=OPEN_MAX)
         	return EBADF;
-     if(curproc->filetable[fd]==NULL)
-     	return EBADF;
+  if(curproc->filetable[fd]==NULL)
+ 	        return EBADF;
 
   	//kprintf("Decrementing counter");
   	if(curproc->filetable[fd]->counter!=0)
@@ -175,11 +171,10 @@ int sys_close(int fd){
 
 	if(curproc->filetable[fd]->counter == 0 && fd>2)
 	{
-    	//kprintf("LOCK DESTROY : %d", curproc->pid);
-		lock_destroy(curproc->filetable[fd]->lock);
-    	vfs_close(curproc->filetable[fd]->file);
-    	kfree(curproc->filetable[fd]);
-		curproc->filetable[fd]=NULL;
+	 lock_destroy(curproc->filetable[fd]->lock);
+	 vfs_close(curproc->filetable[fd]->file);
+   kfree(curproc->filetable[fd]);
+   curproc->filetable[fd]=NULL;
 	}
 	return 0;
 }
@@ -193,17 +188,12 @@ int sys_dup2(int fd_old, int fd_new, int *retval){
 
 	if(curproc->filetable[fd_old]==NULL)
 		return EBADF;
-	//lock_acquire
-
-  // Loop and return EMFILE
-
 
 	if(curproc->filetable[fd_new]!=NULL)
-		sys_close(fd_new); //could cause error, might need to be dealt with
+		sys_close(fd_new);
 	curproc->filetable[fd_new]=curproc->filetable[fd_old];
 	curproc->filetable[fd_new]->counter++;
 	*retval=fd_new;
-	//lock_release
   return 0;
 }
 
@@ -251,10 +241,3 @@ int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos){
 	return 0;
 
 }
-
-/*int sys_chdir(const char *path_name){
-}
-
-int sys__getcwd(char *buf, size_t buflen,int *retval){
-}
-*/
