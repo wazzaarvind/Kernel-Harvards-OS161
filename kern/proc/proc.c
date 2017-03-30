@@ -231,7 +231,7 @@ proc_destroy(struct proc *proc)
 		as_destroy(as);
 	}
 
-	int i=3;
+	int i=0;
 	while(i<100)
 	{
 		if(proc->filetable[i]!=NULL)
