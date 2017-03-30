@@ -140,7 +140,7 @@ int sys_open(char *path_file, int flags, mode_t mode, int *retval){
 
 	if(check!=0)
 	{
-    kfree(curproc->filetable[file_index]->file);
+    //kfree(curproc->filetable[file_index]->file);
 		return check;
 	}
 
@@ -204,8 +204,9 @@ int sys_dup2(int fd_old, int fd_new, int *retval){
 
 int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos){
 
+	//
 
-	
+	struct stat *stats_file=kmalloc(sizeof(struct stat));
 	if(fd<0||fd>=OPEN_MAX||curproc->filetable[fd]==NULL)
 		return EBADF;
 
@@ -230,21 +231,13 @@ int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos){
 	}
 	else if(whence==SEEK_END)
 	{
-		struct stat *stats_file=kmalloc(sizeof(struct stat));
 		int check1=VOP_STAT(curproc->filetable[fd]->file,stats_file);
 		if(check1==0)
-			{
-				curproc->filetable[fd]->offset=pos+stats_file->st_size;
-				kfree(stats_file);
-			}
+			curproc->filetable[fd]->offset=pos+stats_file->st_size;
 		else
 			return check1;
 		if(curproc->filetable[fd]->offset<0)
-			{
-				kfree(stats_file);
-				return EINVAL;
-			}
-			kfree(stats_file);
+			return EINVAL;
 	}
 	else
 		return EINVAL;
