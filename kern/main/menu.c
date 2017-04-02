@@ -36,7 +36,6 @@
 #include <uio.h>
 #include <clock.h>
 #include <mainbus.h>
-#include <proc_syscall.h>
 #include <synch.h>
 #include <thread.h>
 #include <proc.h>

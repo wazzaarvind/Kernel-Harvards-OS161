@@ -35,7 +35,10 @@
  *
  * You'll probably want to add stuff here.
  */
-
+struct coremap
+{
+	
+}
 
 #include <machine/vm.h>
 
