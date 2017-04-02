@@ -42,6 +42,8 @@ struct coremap_page
 	int chunk_size;
 	int state;
 	int available;
+	paddr_t start;
+	paddr_t end;
 }
 
 // Free=0 Dirty=1 Fixed=2 Clean=3
