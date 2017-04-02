@@ -30,15 +30,24 @@
 #ifndef _VM_H_
 #define _VM_H_
 
+
 /*
  * VM system-related definitions.
  *
  * You'll probably want to add stuff here.
  */
-struct coremap
+struct coremap_page
 {
-	
+	int owner;
+	int chunk_size;
+	int state;
+	int available;
 }
+
+// Free=0 Dirty=1 Fixed=2 Clean=3
+
+//Handle State
+
 
 #include <machine/vm.h>
 
@@ -47,6 +56,9 @@ struct coremap
 #define VM_FAULT_WRITE       1    /* A write was attempted */
 #define VM_FAULT_READONLY    2    /* A write to a readonly page was attempted*/
 
+
+
+void vm_initialise(); //Custon Initialisation function
 
 /* Initialization function */
 void vm_bootstrap(void);

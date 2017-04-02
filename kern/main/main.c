@@ -108,8 +108,8 @@ boot(void)
 	kprintf("\n");
 
 	/* Early initialization. */
-	vm_initialise();
 	ram_bootstrap();
+	vm_initialise();
 	proc_bootstrap();
 	thread_bootstrap();
 	hardclock_bootstrap();
