@@ -61,20 +61,23 @@ vaddr_t alloc_kpages(unsigned npages)
 	if(i==size-1&&coremap_page[size-1].available!=1)
 		return 0;
 
-	pa = getppages(npages);
-	if (pa==0) {
-		return 0;
-	}
+	//pa = getppages(npages);
+	//if (pa==0) {
+	//	return 0;
+	//}
 
 	numBytes += npages * 4096; 
+	coremap_page[i].chunk_size=npages;
+	int start_alloc=i;
 	while(npages>0)
 	{
 		coremap_page[i++].available=0;
+		//do we need to modify other variables?
 		npages--;
 	}
 
 
-	return PADDR_TO_KVADDR(pa);
+	return PADDR_TO_KVADDR(pa); //start_alloc*4096?
 
 }
 
