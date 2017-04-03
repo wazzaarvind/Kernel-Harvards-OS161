@@ -30,6 +30,8 @@
 #ifndef _VM_H_
 #define _VM_H_
 
+#include <synch.h> // fix import
+
 
 /*
  * VM system-related definitions.
@@ -43,8 +45,11 @@ struct coremap_page
 	int state;
 	int available;
 	paddr_t start;
-	paddr_t end;
+	//paddr_t end;
 }
+
+// Adding a lock for coremap synchronization.
+struct lock *coremap_lock;
 
 // Free=0 Dirty=1 Fixed=2 Clean=3
 

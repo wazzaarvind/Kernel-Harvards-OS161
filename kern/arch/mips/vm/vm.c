@@ -11,45 +11,44 @@
 #include <addrspace.h>
 #include <vm.h>
 
-int size = 0; 
+int last;
+int start;
+int size;
 
-int numBytes = 0; 
+int numBytes;
 
 void vm_initialise{
 
-	size = mainbus_ramsize();
-	
+ 	last = 0;
+	start = 0;
+	size = 0;
+
+	coremap_lock = lock_create("coremap_lock");
+	last = ram_getsize(); // Get the last address of ram.
+	start = ram_getfirstfree(); // Get the first address of ram.
+
+	size = last - start;
+
 	size = size/4096;
-	
+
 	coremap_page coremap_page[size];
-	
+
 	for(int i = 0;i < size;i++){
 		coremap_page[i].available=1;
 		coremap_page[i].chunk_size=0;
 		coremap_page[i].owner=-1;
 		coremap_page[i].state=0;
 	}
+
+	numBytes = 0;
 }
-
-
-/*static
-paddr_t
-getppages(unsigned long npages)
-{
-	paddr_t addr;
-
-	spinlock_acquire(&stealmem_lock);
-
-	addr = ram_stealmem(npages);
-
-	spinlock_release(&stealmem_lock);
-	return addr;
-}*/
-
 
 vaddr_t alloc_kpages(unsigned npages)
 {
 	paddr_t pa;
+
+	lock_acquire(coremap_lock);
+
 	for(int i=0;i<size;i++){
 		if(coremap_page[i].available!=1)
 			continue;
@@ -58,16 +57,14 @@ vaddr_t alloc_kpages(unsigned npages)
 		break;
 	}
 
-	if(i==size-1&&coremap_page[size-1].available!=1)
+	if(i==size-1&&coremap_page[size-1].available!=1&&npages>1) {
+		lock_release(coremap_lock);
 		return 0;
+	}
 
-	//pa = getppages(npages);
-	//if (pa==0) {
-	//	return 0;
-	//}
-
-	numBytes += npages * 4096; 
+	numBytes += npages * 4096;
 	coremap_page[i].chunk_size=npages;
+	coremap_page[i].start = firstpaddr + (i * 4096);
 	int start_alloc=i;
 	while(npages>0)
 	{
@@ -76,31 +73,39 @@ vaddr_t alloc_kpages(unsigned npages)
 		npages--;
 	}
 
+	lock_release(coremap_lock);
 
-	return PADDR_TO_KVADDR(pa); //start_alloc*4096?
+	// What is happening here :
+	return PADDR_TO_KVADDR(coremap_page[start_alloc].start); //start_alloc*4096?
 
 }
 
 void free_kpages(vaddr_t addr)
-{	
+{
+	lock_acquire(coremap_lock);
+
+	// Sanity check on address
+
 	for(int i=0;i<size;i++){
-		if(coremap_page[i].addr == addr){
+		if(coremap_page[i].start == addr){
 			break;
 		}
 	}
 
-	int npages = coremap_page[i].chunk_size; 
+	int npages = coremap_page[i].chunk_size;
 
-	numBytes -= npages * 4096; 
+	numBytes -= npages * 4096;
 
 	while(npages > 0){
 		coremap_page[i].available=1;
 		coremap_page[i].chunk_size=0;
 		coremap_page[i].owner=-1;
 		coremap_page[i].state=0;
-		i++; 
-		npages--; 
+		i++;
+		npages--;
 	}
+
+	lock_release(coremap_lock);
 
 }
 
@@ -111,7 +116,7 @@ unsigned int coremap_used_bytes(void)
 
 void vm_bootstrap(void)
 {
-
+	// Do nothing.
 }
 
 void vm_tlbshootdown(const struct tlbshootdown *ts)
