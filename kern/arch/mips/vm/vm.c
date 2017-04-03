@@ -24,23 +24,45 @@ void vm_initialise{
 	size = 0;
 
 	coremap_lock = lock_create("coremap_lock");
+
 	last = ram_getsize(); // Get the last address of ram.
-	start = ram_getfirstfree(); // Get the first address of ram.
 
-	size = last - start;
+	size = last/4096;
 
-	size = size/4096;
+	start = ram_getfirstfree(); // Used by kernel
 
 	coremap_page coremap_page[size];
 
-	for(int i = 0;i < size;i++){
+	// Find size used by core map
+	int memOfCoremap = sizeof(struct coremap_page) * size;
+
+	float pages =  (start + memOfCoremap)/4096;
+
+	int start_index = 0;
+
+	// Look for partial pages.
+	if(pages > pages + 0.0001){
+		 	start_index = (int) pages + 1;
+	} else {
+			start_index = (int) pages;
+	}
+
+	for(int i=0;i<start_index;i++){
+		coremap_page[i].available=0;
+		coremap_page[i].chunk_size=0;
+		coremap_page[i].owner=-2;
+		coremap_page[i].state=0;
+		//change this later
+	}
+
+	for(int i = start_index; i < size; i++){
 		coremap_page[i].available=1;
 		coremap_page[i].chunk_size=0;
 		coremap_page[i].owner=-1;
 		coremap_page[i].state=0;
 	}
 
-	numBytes = 0;
+	numBytes = start;
 }
 
 vaddr_t alloc_kpages(unsigned npages)
@@ -48,12 +70,23 @@ vaddr_t alloc_kpages(unsigned npages)
 	paddr_t pa;
 
 	lock_acquire(coremap_lock);
+	int flag=0;
 
 	for(int i=0;i<size;i++){
-		if(coremap_page[i].available!=1)
+
+		for(int j=i;j<i+npages;j++){
+			if(coremap_page[j].available!=1)
+			{
+				flag = 1;
+				break;
+			}
+		}
+
+		if(flag == 1){
+			flag = 0;
 			continue;
-		if(coremap_page[i+npages-1].available!=1)
-			continue;
+		}
+
 		break;
 	}
 
@@ -85,6 +118,7 @@ void free_kpages(vaddr_t addr)
 	lock_acquire(coremap_lock);
 
 	// Sanity check on address
+	// Sanity check on owner
 
 	for(int i=0;i<size;i++){
 		if(coremap_page[i].start == addr){
