@@ -17,6 +17,7 @@ int size;
 
 int numBytes;
 
+struct coremap *coremap_page;
 
 void vm_initialise() {
 
@@ -28,23 +29,26 @@ void vm_initialise() {
 
 	size = last/4096;
 
-	start = ram_getfirstfree(); // Used by kernel
+	start = ram_getfirstfree();  // Used by kernel
 
-	struct coremap coremap_page[size];
+  coremap_page = (struct coremap *)PADDR_TO_KVADDR(start);
+	//struct coremap coremap_page[size];
 
 	// Find size used by core map
 	int memOfCoremap = sizeof(struct coremap) * size;
 
-	float pages =  (start + memOfCoremap)/4096;
+	int pages =  (start + memOfCoremap)/4096;
 
 	int start_index = 0;
 
 	// Look for partial pages.
-	if(pages > pages + 0.0001){
-		 	start_index = (int) pages + 1;
-	} else {
-			start_index = (int) pages;
-	}
+	// if(pages > pages + 0.0001){
+	// 	 	start_index = (int) pages + 1;
+	// } else {
+	// 		start_index = (int) pages;
+	// }
+
+  start_index=pages;
 
 	for(int i=0;i<start_index;i++){
 		coremap_page[i].available=0;
@@ -89,8 +93,7 @@ vaddr_t alloc_kpages(unsigned npages)
 		break;
 	}
 
-	if(i==size-1&&coremap_page[size-1].available!=1&&npages>1) {
-		lock_release(coremap_lock);
+	if(i==size-1 && coremap_page[size-1].available!=1 && npages>1) {
 		return 0;
 	}
 
@@ -151,6 +154,14 @@ unsigned int coremap_used_bytes(void)
 void vm_bootstrap(void)
 {
 	// Do nothing.
+}
+
+int vm_fault(int faulttype, vaddr_t faultaddress)
+{
+    (void) faulttype;
+    (void) faultaddress;
+
+    return 0;
 }
 
 void vm_tlbshootdown(const struct tlbshootdown *ts)
