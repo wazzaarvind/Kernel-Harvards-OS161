@@ -1,5 +1,5 @@
-#include <mainbus.h>
 #include <types.h>
+#include <mainbus.h>
 #include <kern/errno.h>
 #include <lib.h>
 #include <spl.h>
@@ -17,13 +17,12 @@ int size;
 
 int numBytes;
 
-void vm_initialise{
+
+void vm_initialise() {
 
  	last = 0;
 	start = 0;
 	size = 0;
-
-	coremap_lock = lock_create("coremap_lock");
 
 	last = ram_getsize(); // Get the last address of ram.
 
@@ -31,10 +30,10 @@ void vm_initialise{
 
 	start = ram_getfirstfree(); // Used by kernel
 
-	coremap_page coremap_page[size];
+	struct coremap coremap_page[size];
 
 	// Find size used by core map
-	int memOfCoremap = sizeof(struct coremap_page) * size;
+	int memOfCoremap = sizeof(struct coremap) * size;
 
 	float pages =  (start + memOfCoremap)/4096;
 
@@ -67,14 +66,14 @@ void vm_initialise{
 
 vaddr_t alloc_kpages(unsigned npages)
 {
-	paddr_t pa;
+  int i = 0;
+  int j = 0;
 
-	lock_acquire(coremap_lock);
 	int flag=0;
 
-	for(int i=0;i<size;i++){
+	for(i=0; i<size; i++){
 
-		for(int j=i;j<i+npages;j++){
+		for(j=i; (unsigned)j<i+npages; j++){
 			if(coremap_page[j].available!=1)
 			{
 				flag = 1;
@@ -97,7 +96,7 @@ vaddr_t alloc_kpages(unsigned npages)
 
 	numBytes += npages * 4096;
 	coremap_page[i].chunk_size=npages;
-	coremap_page[i].start = firstpaddr + (i * 4096);
+	coremap_page[i].start = start + (i * 4096);
 	int start_alloc=i;
 	while(npages>0)
 	{
@@ -106,8 +105,6 @@ vaddr_t alloc_kpages(unsigned npages)
 		npages--;
 	}
 
-	lock_release(coremap_lock);
-
 	// What is happening here :
 	return PADDR_TO_KVADDR(coremap_page[start_alloc].start); //start_alloc*4096?
 
@@ -115,7 +112,7 @@ vaddr_t alloc_kpages(unsigned npages)
 
 void free_kpages(vaddr_t addr)
 {
-	lock_acquire(coremap_lock);
+  int i = 0;
 
 	// Sanity check on address
 	// Sanity check on owner
@@ -125,6 +122,10 @@ void free_kpages(vaddr_t addr)
 			break;
 		}
 	}
+
+  if(i == 0){
+    // Handle page requested to be removed is not found.
+  }
 
 	int npages = coremap_page[i].chunk_size;
 
@@ -139,7 +140,6 @@ void free_kpages(vaddr_t addr)
 		npages--;
 	}
 
-	lock_release(coremap_lock);
 
 }
 

@@ -38,15 +38,15 @@
  *
  * You'll probably want to add stuff here.
  */
-struct coremap_page
+struct coremap
 {
 	int owner;
 	int chunk_size;
 	int state;
 	int available;
 	paddr_t start;
-	//paddr_t end;
-}
+	
+};
 
 // Adding a lock for coremap synchronization.
 struct lock *coremap_lock;
@@ -65,7 +65,7 @@ struct lock *coremap_lock;
 
 
 
-void vm_initialise(); //Custon Initialisation function
+void vm_initialise(void); //Custon Initialisation function
 
 /* Initialization function */
 void vm_bootstrap(void);
