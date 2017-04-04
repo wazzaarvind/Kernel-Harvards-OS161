@@ -27,17 +27,26 @@ void vm_initialise() {
 
 	last = ram_getsize(); // Get the last address of ram.
 
+	kprintf("Last %d\n",last);
+
 	size = last/4096;
+	kprintf("Size %d\n",size);
 
 	start = ram_getfirstfree();  // Used by kernel
+	kprintf("Start %d\n",start);
+
 
   coremap_page = (struct coremap *)PADDR_TO_KVADDR(start);
 	//struct coremap coremap_page[size];
 
 	// Find size used by core map
 	int memOfCoremap = sizeof(struct coremap) * size;
+	kprintf("MCM %d\n",memOfCoremap);
+
 
 	int pages =  (start + memOfCoremap)/4096;
+	kprintf("Pages %d\n",pages);
+
 
 	int start_index = 0;
 
@@ -48,13 +57,14 @@ void vm_initialise() {
 	// 		start_index = (int) pages;
 	// }
 
-  start_index=pages;
+  start_index=pages+1;
 
 	for(int i=0;i<start_index;i++){
 		coremap_page[i].available=0;
 		coremap_page[i].chunk_size=0;
 		coremap_page[i].owner=-2;
 		coremap_page[i].state=0;
+		coremap_page++;
 		//change this later
 	}
 
@@ -63,9 +73,10 @@ void vm_initialise() {
 		coremap_page[i].chunk_size=0;
 		coremap_page[i].owner=-1;
 		coremap_page[i].state=0;
+		coremap_page++;
 	}
 
-	numBytes = start;
+	numBytes = start_index*4096;
 }
 
 vaddr_t alloc_kpages(unsigned npages)
@@ -122,7 +133,7 @@ void free_kpages(vaddr_t addr)
 
 	for(int i=0;i<size;i++){
 		if(coremap_page[i].start == addr){
-			break;
+			break; //need to convert
 		}
 	}
 
@@ -148,6 +159,7 @@ void free_kpages(vaddr_t addr)
 
 unsigned int coremap_used_bytes(void)
 {
+	kprintf("Hi%d\n",numBytes);
 	return numBytes;
 }
 
