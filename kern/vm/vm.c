@@ -17,8 +17,6 @@ int size;
 
 int numBytes;
 
-struct coremap *coremap_page;
-
 void vm_initialise() {
 
  	last = 0;
@@ -36,7 +34,7 @@ void vm_initialise() {
 	kprintf("Start %d\n",start);
 
 
-  coremap_page = (struct coremap *)PADDR_TO_KVADDR(start);
+  coremap_page = (struct coremap *)PADDR_TO_KVADDR(start); // Suggested by Ben.
 	//struct coremap coremap_page[size];
 
 	// Find size used by core map
@@ -45,38 +43,43 @@ void vm_initialise() {
 
 
 	int pages =  (start + memOfCoremap)/4096;
+
+  if( (start + memOfCoremap) % 4096 > 0){
+    pages += 1;
+  }
+
+  start = pages * 4096;
+
 	kprintf("Pages %d\n",pages);
 
-
-	int start_index = 0;
-
-	// Look for partial pages.
-	// if(pages > pages + 0.0001){
-	// 	 	start_index = (int) pages + 1;
-	// } else {
-	// 		start_index = (int) pages;
-	// }
-
-  start_index=pages+1;
-
-	for(int i=0;i<start_index;i++){
+	for(int i=0;i<pages;i++){
 		coremap_page[i].available=0;
 		coremap_page[i].chunk_size=0;
-		coremap_page[i].owner=-2;
-		coremap_page[i].state=0;
-		coremap_page++;
+		//coremap_page[i].owner=-2;
+		//coremap_page[i].state=0;
+    //kprintf("%d : %d", coremap_page[i].owner, i);
 		//change this later
 	}
 
-	for(int i = start_index; i < size; i++){
+  kprintf("Updated start %d\n",start);
+
+	for(int i = pages; i < size; i++){
 		coremap_page[i].available=1;
 		coremap_page[i].chunk_size=0;
-		coremap_page[i].owner=-1;
-		coremap_page[i].state=0;
-		coremap_page++;
+		//coremap_page[i].owner=-1;
+		//coremap_page[i].state=0;
 	}
 
-	numBytes = start_index*4096;
+  // for(int i = start_index; i < size; i++){
+  //
+  //   kprintf("%d : %d", coremap_page[i].owner, i);
+  //
+  //   //change this later
+  // }
+  //
+
+  numBytes = pages * 4096;
+  kprintf("Num bytes : %d \n", numBytes);
 }
 
 vaddr_t alloc_kpages(unsigned npages)
@@ -86,9 +89,10 @@ vaddr_t alloc_kpages(unsigned npages)
 
 	int flag=0;
 
-	for(i=0; i<size; i++){
+	for(i = 0; i < size; i++){
+    // Add another check here.
+		for(j = i; (unsigned) j < i + npages; j++){
 
-		for(j=i; (unsigned)j<i+npages; j++){
 			if(coremap_page[j].available!=1)
 			{
 				flag = 1;
@@ -104,23 +108,24 @@ vaddr_t alloc_kpages(unsigned npages)
 		break;
 	}
 
-	if(i==size-1 && coremap_page[size-1].available!=1 && npages>1) {
+	if(i == size-1  && npages>1) {
 		return 0;
 	}
 
 	numBytes += npages * 4096;
-	coremap_page[i].chunk_size=npages;
-	coremap_page[i].start = start + (i * 4096);
+	coremap_page[i].chunk_size = npages;
+	//coremap_page[i].start =  (i * 4096);
 	int start_alloc=i;
 	while(npages>0)
 	{
-		coremap_page[i++].available=0;
+		coremap_page[i].available=0;
 		//do we need to modify other variables?
 		npages--;
+    i++;
 	}
 
 	// What is happening here :
-	return PADDR_TO_KVADDR(coremap_page[start_alloc].start); //start_alloc*4096?
+	return PADDR_TO_KVADDR(start_alloc * 4096); //start_alloc*4096?
 
 }
 
@@ -132,14 +137,15 @@ void free_kpages(vaddr_t addr)
 	// Sanity check on owner
 
 	for(int i=0;i<size;i++){
-		if(coremap_page[i].start == addr){
+    vaddr_t Page_addr = PADDR_TO_KVADDR(i * 4096);
+		if(Page_addr == addr){
 			break; //need to convert
 		}
 	}
 
-  if(i == 0){
-    // Handle page requested to be removed is not found.
-  }
+  // if(i == 0){
+  //   // Handle page requested to be removed is not found.
+  // }
 
 	int npages = coremap_page[i].chunk_size;
 
@@ -148,8 +154,8 @@ void free_kpages(vaddr_t addr)
 	while(npages > 0){
 		coremap_page[i].available=1;
 		coremap_page[i].chunk_size=0;
-		coremap_page[i].owner=-1;
-		coremap_page[i].state=0;
+		// coremap_page[i].owner=-1;
+		// coremap_page[i].state=0;
 		i++;
 		npages--;
 	}
@@ -159,7 +165,7 @@ void free_kpages(vaddr_t addr)
 
 unsigned int coremap_used_bytes(void)
 {
-	kprintf("Hi%d\n",numBytes);
+	//kprintf("Hi%d\n",numBytes);
 	return numBytes;
 }
 

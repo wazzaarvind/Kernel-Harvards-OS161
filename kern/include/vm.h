@@ -40,16 +40,15 @@
  */
 struct coremap
 {
-	int owner;
+	//int owner;
 	int chunk_size;
-	int state;
+	//int state;
 	int available;
-	paddr_t start;
-	
+	//paddr_t start;
+
 };
 
-// Adding a lock for coremap synchronization.
-struct lock *coremap_lock;
+struct coremap *coremap_page;
 
 // Free=0 Dirty=1 Fixed=2 Clean=3
 
