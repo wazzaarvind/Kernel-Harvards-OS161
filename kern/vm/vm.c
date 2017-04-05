@@ -11,155 +11,151 @@
 #include <addrspace.h>
 #include <vm.h>
 
-int last;
-int start;
-int size;
+
+paddr_t size;
+
+int tpages = 0;
 
 int numBytes;
 
 void vm_initialise() {
 
- 	last = 0;
-	start = 0;
-	size = 0;
+  tpages = 0; // Total possible pages in the ram.
+  size = 0;
+  numBytes = 0;
 
-	last = ram_getsize(); // Get the last address of ram.
+  spinlock_init(&vmlock);
 
-	kprintf("Last %d\n",last);
+  // Get the size of the RAM.
+  size = ram_getsize();
+  tpages = size/PAGE_SIZE;
 
-	size = last/4096;
-	kprintf("Size %d\n",size);
+  // Check how much is used by Kernel + Exception handler
+  paddr_t f_paddr = ram_getfirstfree();
 
-	start = ram_getfirstfree();  // Used by kernel
-	kprintf("Start %d\n",start);
+  // Init of coremap - vm.h
+  // Allocate the memory used by coremap - start in first free
+  coremap = (struct coremap_struct *)PADDR_TO_KVADDR(f_paddr); // Still in physical **
 
+  // Coremap usage:
+  int coremap_size = sizeof(struct coremap_struct) * tpages;
 
-  coremap_page = (struct coremap *)PADDR_TO_KVADDR(start); // Suggested by Ben.
-	//struct coremap coremap_page[size];
+// Knvalidate pages :  K + EC + CM
+  int mem_Kused = coremap_size + (f_paddr);
+  int pages_Kused = mem_Kused/PAGE_SIZE;
 
-	// Find size used by core map
-	int memOfCoremap = sizeof(struct coremap) * size;
-	kprintf("MCM %d\n",memOfCoremap);
-
-
-	int pages =  (start + memOfCoremap)/4096;
-
-  if( (start + memOfCoremap) % 4096 > 0){
-    pages += 1;
+  // Check for fractions :
+  if(mem_Kused % PAGE_SIZE > 0){
+    pages_Kused++;
   }
 
-  start = pages * 4096;
+  for(int i = 0; i < pages_Kused; i++){
+    coremap[i].available = 0;
+    coremap[i].chunk_size = 0;
+  }
 
-	kprintf("Pages %d\n",pages);
+  // Make the rest available :
+  for(int j = pages_Kused; j < tpages; j++){
+    coremap[j].available = 1;
+    coremap[j].chunk_size = 0;
+  }
 
-	for(int i=0;i<pages;i++){
-		coremap_page[i].available=0;
-		coremap_page[i].chunk_size=0;
-		//coremap_page[i].owner=-2;
-		//coremap_page[i].state=0;
-    //kprintf("%d : %d", coremap_page[i].owner, i);
-		//change this later
-	}
-
-  kprintf("Updated start %d\n",start);
-
-	for(int i = pages; i < size; i++){
-		coremap_page[i].available=1;
-		coremap_page[i].chunk_size=0;
-		//coremap_page[i].owner=-1;
-		//coremap_page[i].state=0;
-	}
-
-  // for(int i = start_index; i < size; i++){
-  //
-  //   kprintf("%d : %d", coremap_page[i].owner, i);
-  //
-  //   //change this later
-  // }
-  //
-
-  numBytes = pages * 4096;
-  kprintf("Num bytes : %d \n", numBytes);
+  numBytes += pages_Kused * PAGE_SIZE;
+  //kprintf("Num bytes : %d \n", numBytes);
 }
 
 vaddr_t alloc_kpages(unsigned npages)
 {
-  int i = 0;
-  int j = 0;
 
-	int flag=0;
+  int alloc = 0;
+  int req = (int) npages;
+  //int startPage = 0;
+  int i = 0, startAlloc = 0;
 
-	for(i = 0; i < size; i++){
-    // Add another check here.
-		for(j = i; (unsigned) j < i + npages; j++){
+  spinlock_acquire(&vmlock);
 
-			if(coremap_page[j].available!=1)
-			{
-				flag = 1;
-				break;
-			}
-		}
+  for(i = 0; i < (int) tpages; i++){
+    if(coremap[i].available == 1){
+      for(int j = i;  j <  i + (int) npages; j++){
+        if(coremap[j].available == 1){
+          alloc +=1;
+        } else {
+          break;
+        }
+        if(alloc == req){
+          break;
+        }
+      }
+    }
 
-		if(flag == 1){
-			flag = 0;
-			continue;
-		}
+    if(alloc == req){
+      break;
+    } else {
+      alloc = 0;
+    }
+  }
 
-		break;
-	}
+  if(i == (int)(tpages-1)){
+    if(req > 1){
+      spinlock_release(&vmlock);
+      return 0;
+    }
+    if(coremap[i].available == 0){
+      spinlock_release(&vmlock);
+      return 0;
+    }
+  }
 
-	if(i == size-1  && npages>1) {
-		return 0;
-	}
+  startAlloc = i;
+  numBytes += alloc * PAGE_SIZE;
 
-	numBytes += npages * 4096;
-	coremap_page[i].chunk_size = npages;
-	//coremap_page[i].start =  (i * 4096);
-	int start_alloc=i;
-	while(npages>0)
-	{
-		coremap_page[i].available=0;
-		//do we need to modify other variables?
-		npages--;
+
+  while(req > 0){
+    req--;
+    coremap[i].available = 0;
+    coremap[i].chunk_size = (int) npages;
     i++;
-	}
+  }
 
-	// What is happening here :
-	return PADDR_TO_KVADDR(start_alloc * 4096); //start_alloc*4096?
+  spinlock_release(&vmlock);
+
+  return PADDR_TO_KVADDR(startAlloc * PAGE_SIZE);
 
 }
 
 void free_kpages(vaddr_t addr)
 {
   int i = 0;
+  int pagesToInvalidate = 0;
+  vaddr_t iter_addr;
 
-	// Sanity check on address
-	// Sanity check on owner
+  spinlock_acquire(&vmlock);
 
-	for(int i=0;i<size;i++){
-    vaddr_t Page_addr = PADDR_TO_KVADDR(i * 4096);
-		if(Page_addr == addr){
-			break; //need to convert
-		}
-	}
+  for(i = 0; i < (int) tpages; i++){
+    iter_addr = PADDR_TO_KVADDR(i * PAGE_SIZE);
+    if(iter_addr == addr){
+      break;
+    }
+  }
 
-  // if(i == 0){
-  //   // Handle page requested to be removed is not found.
-  // }
+  // Sanity checks :
+  if(coremap[i].available == 1 || coremap[i].chunk_size == 0){
+    spinlock_release(&vmlock);
+    return;
+  }
 
-	int npages = coremap_page[i].chunk_size;
+  pagesToInvalidate = coremap[i].chunk_size;
 
-	numBytes -= npages * 4096;
+  numBytes -= pagesToInvalidate * PAGE_SIZE;
 
-	while(npages > 0){
-		coremap_page[i].available=1;
-		coremap_page[i].chunk_size=0;
-		// coremap_page[i].owner=-1;
-		// coremap_page[i].state=0;
-		i++;
-		npages--;
-	}
+  while (pagesToInvalidate > 0) {
+    coremap[i].available = 1;
+    coremap[i].chunk_size = 0;
+    i++;
+    pagesToInvalidate--;
+  }
 
+  spinlock_release(&vmlock);
 
 }
 

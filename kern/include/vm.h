@@ -38,7 +38,7 @@
  *
  * You'll probably want to add stuff here.
  */
-struct coremap
+struct coremap_struct
 {
 	//int owner;
 	int chunk_size;
@@ -48,8 +48,8 @@ struct coremap
 
 };
 
-struct coremap *coremap_page;
-
+struct coremap_struct *coremap;
+struct spinlock vmlock;
 // Free=0 Dirty=1 Fixed=2 Clean=3
 
 //Handle State
