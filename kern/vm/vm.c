@@ -69,6 +69,8 @@ vaddr_t alloc_kpages(unsigned npages)
 
   int alloc = 0;
   int req = (int) npages;
+  //kprintf("\ntpages: %d\n",tpages);
+  //kprintf("\nReq: %d\n",req);
   //int startPage = 0;
   int i = 0, startAlloc = 0;
 
@@ -95,18 +97,19 @@ vaddr_t alloc_kpages(unsigned npages)
     }
   }
 
-  if(i == (int)(tpages-1)){
+  if(i == (int)(tpages)){
     if(req > 1){
       spinlock_release(&vmlock);
-      return 0;
+      return (vaddr_t)NULL;
     }
     if(coremap[i].available == 0){
       spinlock_release(&vmlock);
-      return 0;
+      return (vaddr_t)NULL;
     }
   }
 
   startAlloc = i;
+  //kprintf("\nAlloc: %d\n",alloc);
   numBytes += alloc * PAGE_SIZE;
 
 
@@ -116,6 +119,7 @@ vaddr_t alloc_kpages(unsigned npages)
     coremap[i].chunk_size = (int) npages;
     i++;
   }
+  //kprintf("\nMagic in VM: %d\n",numBytes);
 
   spinlock_release(&vmlock);
 

@@ -532,16 +532,20 @@ kmalloctest5(int nargs, char **args)
 				oom = 1;
 				break;
 			}
-
+			//
 			// Make sure we can write to the page
 			*(uint32_t *)page = magic++;
-
+			
 			// Make sure the number of used bytes is going up, and by increments of PAGE_SIZE
+			//kprintf("\nUsed1 : %d\n",used);
 			used = coremap_used_bytes();
+			//kprintf("\nUsed2 : %d\n",used);
 			if (used != prev + PAGE_SIZE) {
+
 				panic("Allocation not equal to PAGE_SIZE. prev: %u used: %u", prev, used);
 			}
 			prev = used;
+
 
 			ptrs[block][pos] = page;
 			pos++;
@@ -550,6 +554,9 @@ kmalloctest5(int nargs, char **args)
 				block++;
 			}
 			pages++;
+			//kprintf("\nPages : %d\n",pages);
+			//kprintf("\nMax Pages : %d\n",max_pages);
+			//kprintf("\nUsed : %d\n",used);
 		}
 
 		// Step 2: Check that we were able to allocate a reasonable number of pages
