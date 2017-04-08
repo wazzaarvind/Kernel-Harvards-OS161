@@ -55,7 +55,7 @@
  * The process for the kernel; this holds all the kernel-only threads.
  */
 struct proc *kproc;
-struct proc *proctable[4000];
+//struct proc *proctable[4000];
 
 /*
  * Create a proc structure.
@@ -335,6 +335,7 @@ proc_create_runprogram(const char *name)
 	stdin->flags = O_RDONLY;
 	stdin->lock = lock_create("STDIN lock");
 	newproc->filetable[0] = stdin;
+	kfree(strvfs);
 	//}
 
 	strvfs=kstrdup("con:");
@@ -350,6 +351,7 @@ proc_create_runprogram(const char *name)
 	stdout->lock = lock_create("STDOUT lock");
 	newproc->filetable[1] = stdout;
 	//}
+	kfree(strvfs);
 
 	strvfs=kstrdup("con:");
 	// STDERR insertion :
@@ -364,6 +366,7 @@ proc_create_runprogram(const char *name)
 	stderr->lock = lock_create("STDERR lock");
 	newproc->filetable[2] = stderr;
 	//}
+	kfree(strvfs);
 
 
 	return newproc;

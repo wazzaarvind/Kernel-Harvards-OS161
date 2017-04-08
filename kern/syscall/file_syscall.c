@@ -140,7 +140,9 @@ int sys_open(char *path_file, int flags, mode_t mode, int *retval){
 
 	if(check!=0)
 	{
+		kfree(curproc->filetable[file_index]);
     //kfree(curproc->filetable[file_index]->file);
+		//vfs_close(curproc->filetable[file_index]->file);
 		return check;
 	}
 
@@ -214,12 +216,18 @@ int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos){
 
 	int check=VOP_ISSEEKABLE(curproc->filetable[fd]->file);
 	if(check==0)
-		return ESPIPE;
+		{
+			//kfree(stats_file);
+			return ESPIPE;
+		}
 
 	if(whence==SEEK_SET)
 	{	curproc->filetable[fd]->offset=pos; //might need to change type of offset in proc.h to off_t
 		if(curproc->filetable[fd]->offset<0)
-			return EINVAL;
+			{
+				//kfree(stats_file);
+				return EINVAL;
+			}
 	}
 
 
@@ -227,21 +235,36 @@ int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos){
 	{
 		curproc->filetable[fd]->offset+=pos;
 		if(curproc->filetable[fd]->offset<0)
+		{	
+			//kfree(stats_file);
 			return EINVAL;
+		}
 	}
 	else if(whence==SEEK_END)
 	{
 		int check1=VOP_STAT(curproc->filetable[fd]->file,stats_file);
 		if(check1==0)
+		{
+			//kfree(stats_file);
 			curproc->filetable[fd]->offset=pos+stats_file->st_size;
+		}
 		else
+		{
+			//kfree(stats_file);
 			return check1;
+		}
 		if(curproc->filetable[fd]->offset<0)
+		{
+			//kfree(stats_file);
 			return EINVAL;
+		}
 	}
 	else
+	{	
+		//kfree(stats_file);
 		return EINVAL;
-
+	}
+	kfree(stats_file);
 	*new_pos=curproc->filetable[fd]->offset;
 
 	return 0;

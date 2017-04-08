@@ -51,11 +51,13 @@ sem_create(const char *name, unsigned initial_count)
 
 	sem = kmalloc(sizeof(*sem));
 	if (sem == NULL) {
+		kfree(sem);
 		return NULL;
 	}
 
 	sem->sem_name = kstrdup(name);
 	if (sem->sem_name == NULL) {
+		kfree(sem->sem_name);
 		kfree(sem);
 		return NULL;
 	}
@@ -144,12 +146,14 @@ lock_create(const char *name)
 
 	lock = kmalloc(sizeof(*lock));
 	if (lock == NULL) {
+		kfree(lock);
 		return NULL;
 	}
 
 	lock->lk_name = kstrdup(name);
 
 	if (lock->lk_name == NULL) {
+		kfree(lock->lk_name);
 		kfree(lock);
 		return NULL;
 	}
@@ -270,11 +274,13 @@ cv_create(const char *name)
 
 	cv = kmalloc(sizeof(*cv));
 	if (cv == NULL) {
+		kfree(cv);
 		return NULL;
 	}
 
 	cv->cv_name = kstrdup(name);
 	if (cv->cv_name==NULL) {
+		kfree(cv->cv_name);
 		kfree(cv);
 		return NULL;
 	}
@@ -365,12 +371,14 @@ rwlock_create(const char *rw_name)
 	rwlock = kmalloc(sizeof(*rwlock));
 
 	if(rwlock == NULL){
+		kfree(rwlock);
 		return NULL;
 	}
 
 	rwlock->rwlock_name = kstrdup(rw_name);
 
 	if(rwlock->rwlock_name== NULL){
+		kfree(rwlock->rwlock_name);
 		kfree(rwlock);
 		return NULL;
 	}

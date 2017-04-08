@@ -107,6 +107,7 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
 
   if(status != NULL)
     copyout((const void *)&proctable[pid]->exit_code, (userptr_t)status, sizeof(int));
+  //proc_destroy(proctable[pid]);
 
 
 
@@ -125,8 +126,10 @@ int sys__exit(int exitcode){
       curproc->exit_code=_MKWAIT_EXIT(exitcode);
       //curproc->exit_status=1;
       V(curproc->proc_sem);
+      //proc_destroy(curproc);
 
       thread_exit();
+      proc_destroy(curproc);
       //how to actually exit?
 
       return 0;

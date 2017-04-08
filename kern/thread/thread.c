@@ -826,6 +826,7 @@ thread_exit(void)
 		wchan_wakeall(thread_count_wchan, &thread_count_lock);
 		spinlock_release(&thread_count_lock);
 	}
+	//proc_destroy(curproc);
 
 	/* Interrupts off on this processor */
 	splhigh();

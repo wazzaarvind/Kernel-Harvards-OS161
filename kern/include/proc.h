@@ -55,7 +55,7 @@ struct filehandle {
 
 };
 
-extern struct proc *proctable[4000];
+ struct proc *proctable[1024];
 
 /*
  * Process structure.
