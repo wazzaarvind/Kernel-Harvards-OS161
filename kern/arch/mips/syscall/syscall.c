@@ -240,11 +240,11 @@ enter_forked_process(struct trapframe *tf,long unsigned int temp)
 	struct trapframe trapframe = *tf;
 
 	// We don't need this anymore. 
-	kfree(tf);
 
 	trapframe.tf_a3=0;
 	trapframe.tf_v0=0;
 	trapframe.tf_epc+=4;
+	kfree(tf);
 
 	mips_usermode(&trapframe);
 

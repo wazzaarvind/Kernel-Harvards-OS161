@@ -34,6 +34,7 @@ int sys_fork(struct trapframe *tf, int *retval){
   }
 
   memcpy(trapframe, tf, sizeof(struct trapframe));
+  //kfree(trapframe);
 
 
   *retval=newProc->pid;
@@ -98,22 +99,31 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
   if(status==(void *)0x40000000||status==(void *)0x80000000)
     return EFAULT;
 
+  //kprintf("Curproc Exit status : %d\n",curproc->exit_status);
+  //kprintf("Child Exit Status : %d\n",proctable[pid]->exit_status);
 
-      P(proctable[pid]->proc_sem);  // wwait for child
+  if(proctable[pid]->exit_status!=1)
+  {   
+
+     P(proctable[pid]->proc_sem);  // wwait for child
 //    }
 
-
-
-
-  if(status != NULL)
-    copyout((const void *)&proctable[pid]->exit_code, (userptr_t)status, sizeof(int));
-  //proc_destroy(proctable[pid]);
+  //if(status != NULL)
+     copyout((const void *)&proctable[pid]->exit_code, (userptr_t)status, sizeof(int));
 
 
 
 
+    
+ 
+  }
+
+  //else
+   // kprintf("\n didnt go in \n");
+  proc_destroy(proctable[pid]);
   proctable[pid]=NULL;
   *retval=pid;
+
 
   return 0;
 }
@@ -121,15 +131,30 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
 int sys__exit(int exitcode){
 
       //kprintf("\nEXIT %d\n",exitcode);
+      //kprintf("CurProc in exit Exit Status : %d\n",curproc->exit_status);
       KASSERT(curproc->exit_status!=1);
+      //kprintf("Parent ID : %d\n",curproc->ppid);
 
-      curproc->exit_code=_MKWAIT_EXIT(exitcode);
+      //if(proctable[curproc->ppid]->exit_status==0)
+      //{
+        curproc->exit_code=_MKWAIT_EXIT(exitcode);
+        curproc->exit_status=1;
+        V(curproc->proc_sem);
+        //kprintf("Sem count : %d\n",curproc->proc_sem->sem_count);
+        thread_exit();
+      //}
+      /*else 
+      {
+        curproc->exit_status=1;
+        thread_exit();
+        proc_destroy(curproc);
+      }*/
       //curproc->exit_status=1;
-      V(curproc->proc_sem);
+      
       //proc_destroy(curproc);
 
-      thread_exit();
-      proc_destroy(curproc);
+      //thread_exit();
+      //proc_destroy(curproc);
       //how to actually exit?
 
       return 0;
