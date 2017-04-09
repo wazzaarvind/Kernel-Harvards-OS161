@@ -264,7 +264,7 @@ int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos){
 		//kfree(stats_file);
 		return EINVAL;
 	}
-	kfree(stats_file);
+	//kfree(stats_file);
 	*new_pos=curproc->filetable[fd]->offset;
 
 	return 0;
