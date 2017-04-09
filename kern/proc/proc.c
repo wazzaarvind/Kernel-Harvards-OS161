@@ -90,7 +90,7 @@ proc_create(const char *name)
 	/* Achuth Edit - initialization of fields */
 
 	/* TODO : Get a PID for the newly created process, Maybe move to a counter based implementation*/
-	int i = 2;
+	int i = 1;
 	while(proctable[i] != NULL){
 		if(i == 100){
 			return NULL;
@@ -100,7 +100,7 @@ proc_create(const char *name)
 
 	proc->pid = i;
 	proctable[i] = proc;
-	proc->ppid = -1;
+	proc->ppid = 0;
 	proc->exit_status=0;
 	proc->exit_code=0;
 	proc->proc_sem=sem_create("Wait Proc Sem", 0);
@@ -241,11 +241,12 @@ proc_destroy(struct proc *proc)
 
 			if(proc->filetable[i]->counter==0)
 			{
-				lock_destroy(proc->filetable[i]->lock);
 				vfs_close(proc->filetable[i]->file);
+				lock_destroy(proc->filetable[i]->lock);
 				kfree(proc->filetable[i]);
-				proc->filetable[i]=NULL;
+				//proc->filetable[i]=NULL;
 			}
+			proc->filetable[i]=NULL;
 		}
 		i++;
 	}
@@ -271,6 +272,9 @@ proc_destroy(struct proc *proc)
 void
 proc_bootstrap(void)
 {
+	for (int i = 0; i < 100; i++) {
+		proctable[i] = NULL;
+	}
 	kproc = proc_create("[kernel]");
 	if (kproc == NULL) {
 		panic("proc_create for kproc failed\n");
@@ -296,6 +300,7 @@ proc_create_runprogram(const char *name)
 	/* VM fields */
 
 	newproc->p_addrspace = NULL;
+	newproc->ppid=1;
 
 	/* VFS fields */
 	/*

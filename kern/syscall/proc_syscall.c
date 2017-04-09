@@ -98,16 +98,20 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
   if(status==(void *)0x40000000||status==(void *)0x80000000)
     return EFAULT;
 
-
+   if(proctable[pid]->exit_status!=1)
+    {
       P(proctable[pid]->proc_sem);  // wwait for child
 //    }
 
 
 
 
-  if(status != NULL)
+  //if(status != NULL)
     copyout((const void *)&proctable[pid]->exit_code, (userptr_t)status, sizeof(int));
-  //proc_destroy(proctable[pid]);
+  }
+  
+
+  proc_destroy(proctable[pid]);
 
 
 
@@ -125,11 +129,12 @@ int sys__exit(int exitcode){
 
       curproc->exit_code=_MKWAIT_EXIT(exitcode);
       //curproc->exit_status=1;
+      curproc->exit_status=1;
       V(curproc->proc_sem);
       //proc_destroy(curproc);
 
       thread_exit();
-      proc_destroy(curproc);
+      //proc_destroy(curproc);
       //how to actually exit?
 
       return 0;

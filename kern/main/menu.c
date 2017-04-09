@@ -43,6 +43,7 @@
 #include <sfs.h>
 #include <syscall.h>
 #include <test.h>
+#include <proc_syscall.h>
 #include <prompt.h>
 #include "opt-sfs.h"
 #include "opt-net.h"
@@ -146,6 +147,8 @@ common_prog(int nargs, char **args)
 
 	// Wait for all threads to finish cleanup, otherwise khu be a bit behind,
 	// especially once swapping is enabled.
+	int status;
+	sys_waitpid(proc->pid,&status,0,&result);
 	thread_wait_for_count(tc);
 
 	return 0;
