@@ -238,7 +238,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
     if(pageFlag==1){
       /* Disable interrupts on this CPU while frobbing the TLB. */
       // TODO : KASSERT
-    
+
          spl = splhigh();
 
         for (i=0; i<NUM_TLB; i++) {
@@ -253,6 +253,13 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
             splx(spl);
             return 0;
         }
+
+        // TLB is currently full so evicting a TLB entry
+        ehi = faultaddress;
+        elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+        tlb_random(ehi, elo);
+        splx(spl);
+        return 0;
     }
 
     // There is no PTE for the current vaddr_t.
@@ -267,12 +274,13 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
       first->paddr = alloc_upages(); //page aligned address?
       first->vaddr = KVADDR_TO_PADDR(first->paddr);
       first->next = NULL;
+
+      // Fill up the TLB.
+      // Load TLB and return.
       // what else?
+      //
+      return 0;
     }
-
-    // Load TLB and return.
-
-    return 0;
 }
 
 void vm_tlbshootdown(const struct tlbshootdown *ts)

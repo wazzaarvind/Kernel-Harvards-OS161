@@ -76,6 +76,7 @@ struct addrspace {
         /* Put stuff here for your VM system */
         struct segment *sgmt;
         struct page_table *first_page;
+        // Add pointers to heap and stack.
 
 #endif
 };

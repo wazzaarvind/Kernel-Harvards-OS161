@@ -60,6 +60,8 @@ as_create(void)
 
 	as->first_page = NULL;
 
+	// Make address 0.
+
 	/*
 	 * Initialize as needed.
 	 */
