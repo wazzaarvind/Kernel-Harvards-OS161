@@ -46,13 +46,14 @@ struct page_table {
   vaddr_t vaddr;
   int mem_or_disk; //mem=1,disk=2
   struct page_table *next;
-}
+};
 
 struct segment{
   vaddr_t start;
   vaddr_t end;
   int npages;
-}
+  struct segment *next;
+};
 
 
 /*
@@ -73,7 +74,7 @@ struct addrspace {
         paddr_t as_stackpbase;
 #else
         /* Put stuff here for your VM system */
-        struct segment sgmt[5];
+        struct segment *sgmt;
         struct page_table *first_page;
 
 #endif

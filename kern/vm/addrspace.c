@@ -50,9 +50,10 @@ as_create(void)
 		return NULL;
 	}
 
-	for(int i = 0; i < 5; i++){
-			as->sgmt[i] = NULL;
-	}
+	//for(int i = 0; i < 5; i++){
+			//as->sgmt[i] = NULL;
+	//}
+	as->sgmt = NULL;
 
 	as->first_page = NULL;
 
@@ -155,14 +156,17 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 		if(memsize % PAGE_SIZE > 0){
 				npages++;
 		}
+		as->sgmt->start = vaddr;
+		as->sgmt->end = last_vaddr;
+		as->sgmt->npages = npages;
 
-		for(int i = 0; i < 5; i++){
+		/*for(int i = 0; i < 5; i++){
 			if(as->sgmt[i] == NULL){
 				as->sgmt[i]->start = vaddr;
 				as->sgmt[i]->end = last_vaddr;
 				as->sgmt[i]->npages = npages;
 			}
-		}
+		}*/
 
 
 

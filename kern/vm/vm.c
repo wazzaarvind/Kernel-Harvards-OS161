@@ -174,7 +174,7 @@ void vm_bootstrap(void)
 	// Do nothing.
 }
 
-int vm_fault(int faulttype, vaddr_t faultaddress)
+int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no index in linked list
 {
     (void) faulttype;
     (void) faultaddress;
@@ -182,14 +182,15 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
     int segFlag = 0;
 
     // Can I use curproc?
-    for(int i = 0; i < 5; i++){
-       if(curproc->p_addrspace->sgmt[i] != NULL){
-         struct segment curseg = curproc->p_addrspace->sgmt[i];
+    //or(int i = 0; i < 5; i++){
+    while(curproc->p_addrspace->sgmt != NULL){
+         struct segment curseg = curproc->p_addrspace->sgmt;
          if(faultaddress >= curseg.start && faultaddress < curseg.end){
             segFlag = 1;
          }
+         curproc->p_addrspace->sgmt = curproc->p_addrspace->sgmt->next;
        }
-    }
+    //}
 
     // If its not in one of the segments.
     if(segFlag != 1){
@@ -205,6 +206,23 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
     while(first != NULL){
       //
       if(first->vaddr == faultaddress)
+      { 
+        pageFlag=1;
+        break;
+      }
+      first=first->next;
+    }
+    if(pageFlag==0)
+    {
+      struct page_table *first = curproc->p_addrspace->first_page;
+      while(first!NULL)
+      {
+        first=first->next;
+      }
+      first->paddr=KVADDR_TO_PADDR(??); //page aligned address?
+      coremap[??].available=0;
+      coremap[??].chunk_size=1;
+      // what else?
     }
 
     // Load TLB and return.
