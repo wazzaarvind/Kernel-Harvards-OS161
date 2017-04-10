@@ -72,6 +72,10 @@ void vm_bootstrap(void);
 /* Fault handling function called by trap code */
 int vm_fault(int faulttype, vaddr_t faultaddress);
 
+vaddr_t alloc_upages();
+void free_upage(vaddr_t addr);
+
+
 /* Allocate/free kernel heap pages (called by kmalloc/kfree) */
 vaddr_t alloc_kpages(unsigned npages);
 void free_kpages(vaddr_t addr);

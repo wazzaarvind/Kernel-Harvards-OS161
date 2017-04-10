@@ -33,6 +33,9 @@
 #include <addrspace.h>
 #include <vm.h>
 #include <proc.h>
+#include <spl.h>
+#include <mips/tlb.h>
+
 
 /*
  * Note! If OPT_DUMBVM is set, as is the case until you start the VM
@@ -143,33 +146,47 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 	 * Write this.
 	 */
 
+	 size_t npages;
+
+	 /* Align the region. First, the base... */
+	memsize += vaddr & ~(vaddr_t)PAGE_FRAME;
+	vaddr &= PAGE_FRAME;
+
+	/* ...and now the length. */
+	memsize = (memsize + PAGE_SIZE - 1) & PAGE_FRAME;
+
+	npages = memsize / PAGE_SIZE;
+
 	 // Not implementing permissions for now.
-	 (void)readable;
-	 (void)writeable;
-	 (void)executable;
+	(void)readable;
+	(void)writeable;
+	(void)executable;
 
 
-		vaddr_t last_vaddr = vaddr + memsize;
+	vaddr_t last_vaddr = vaddr + memsize;
 
-		int npages = memsize/PAGE_SIZE;
+	struct segment curseg;
 
-		if(memsize % PAGE_SIZE > 0){
-				npages++;
+	curseg.start = vaddr;
+	curseg.end = last_vaddr;
+	curseg.npages = npages;
+	curseg.next = NULL;
+
+	if(as->sgmt == NULL){
+		// This is the first segment.
+		as->sgmt = &curseg;
+
+	} else {
+
+		struct segment *temp = as->sgmt;//= *((struct segment *)as->sgmt);
+
+		while(temp->next != NULL){
+				//temp = *((struct segment *)temp.next);
+				temp = temp->next;
 		}
-		as->sgmt->start = vaddr;
-		as->sgmt->end = last_vaddr;
-		as->sgmt->npages = npages;
 
-		/*for(int i = 0; i < 5; i++){
-			if(as->sgmt[i] == NULL){
-				as->sgmt[i]->start = vaddr;
-				as->sgmt[i]->end = last_vaddr;
-				as->sgmt[i]->npages = npages;
-			}
-		}*/
-
-
-
+		temp->next = &curseg;
+	}
 
 	 return ENOSYS;
 }
