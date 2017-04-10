@@ -98,6 +98,7 @@ proc_create(const char *name)
 			i++;
 	}
 
+	//kprintf("Giving process id : %d in proc_create", i);
 	proc->pid = i;
 	proctable[i] = proc;
 	proc->ppid = 0;
@@ -139,8 +140,13 @@ fork_proc_create(const char *name)
 		 return NULL;
 	 }
 
+	 // NULL the newproc filetable
+	 //
+	 for(int j = 0; j < 100; j++){
+ 		newProc->filetable[j] = NULL;
+ 	 }
 
-	 for(int i = 0; i < 64; i++){
+	 for(int i = 0; i < 100; i++){
 			 		// Acquire lock before handling the file table.
 					if(curproc->filetable[i] != NULL){
 						curproc->filetable[i]->counter += 1;
@@ -274,11 +280,14 @@ proc_bootstrap(void)
 {
 	for (int i = 0; i < 100; i++) {
 		proctable[i] = NULL;
-	}
+ }
+
 	kproc = proc_create("[kernel]");
+
 	if (kproc == NULL) {
 		panic("proc_create for kproc failed\n");
 	}
+
 }
 
 /*
@@ -298,9 +307,11 @@ proc_create_runprogram(const char *name)
 	}
 
 	/* VM fields */
-
+	for(int j = 0; j < 100; j++){
+		newproc->filetable[j] = NULL;
+	}
 	newproc->p_addrspace = NULL;
-	newproc->ppid=1;
+	newproc->ppid=1; // why?
 
 	/* VFS fields */
 	/*
@@ -317,61 +328,9 @@ proc_create_runprogram(const char *name)
 
 	/*Achuth edit - Enabling the first three file descriptors*/
 	// Init the required file descriptors in file table using vfs_open
-	struct vnode *init;
-	struct filehandle *stdin = kmalloc(sizeof(struct filehandle));
-	struct filehandle *stdout = kmalloc(sizeof(struct filehandle));
-	struct filehandle *stderr = kmalloc(sizeof(struct filehandle));
+
 
 	//char *console = "con:";
-
-	for(int i = 0; i < 100; i++){
-		newproc->filetable[i] = NULL;
-	}
-
-	char *strvfs=kstrdup("con:");
-	// STDIN insertion :
-	int check1=vfs_open(strvfs, O_RDONLY, 0, &init);
-	kprintf("\nCheck 1 %d\n",check1);
-	//if(check1)
-	//{
-	stdin->file = init;
-	stdin->counter = 1;
-	stdin->offset = 0;
-	stdin->flags = O_RDONLY;
-	stdin->lock = lock_create("STDIN lock");
-	newproc->filetable[0] = stdin;
-	kfree(strvfs);
-	//}
-
-	strvfs=kstrdup("con:");
-	// STDOUT insertion :
-	int check2=vfs_open(strvfs, O_WRONLY, 0, &init);
-	kprintf("\nCheck 2 %d\n",check2);
-	//if(!check2)
-	//{
-	stdout->file = init;
-	stdout->counter = 1;
-	stdout->offset = 0;
-	stdout->flags = O_WRONLY;
-	stdout->lock = lock_create("STDOUT lock");
-	newproc->filetable[1] = stdout;
-	//}
-	kfree(strvfs);
-
-	strvfs=kstrdup("con:");
-	// STDERR insertion :
-	int check3=vfs_open(strvfs, O_WRONLY, 0, &init);
-	kprintf("\nCheck 3 %d\n",check3);
-	//if(!check3)
-	//{
-	stderr->file = init;
-	stderr->counter = 1;
-	stderr->offset = 0;
-	stderr->flags = O_WRONLY;
-	stderr->lock = lock_create("STDERR lock");
-	newproc->filetable[2] = stderr;
-	//}
-	kfree(strvfs);
 
 
 	return newproc;

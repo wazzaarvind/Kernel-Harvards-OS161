@@ -97,6 +97,59 @@ runprogram(char *progname)
 		return result;
 	}
 
+	/* Changing file handles to runprogram.c */
+
+	struct vnode *init;
+	struct filehandle *stdin = kmalloc(sizeof(struct filehandle));
+	struct filehandle *stdout = kmalloc(sizeof(struct filehandle));
+	struct filehandle *stderr = kmalloc(sizeof(struct filehandle));
+
+	char *strvfs=kstrdup("con:");
+	// STDIN insertion :
+	int check1=vfs_open(strvfs, O_RDONLY, 0, &init);
+	kprintf("\nCheck 1 %d\n",check1);
+	//if(check1)
+	//{
+	stdin->file = init;
+	stdin->counter = 1;
+	stdin->offset = 0;
+	stdin->flags = O_RDONLY;
+	stdin->lock = lock_create("STDIN lock");
+
+	curproc->filetable[0] = stdin;
+	kfree(strvfs);
+	//}
+
+	strvfs=kstrdup("con:");
+	// STDOUT insertion :
+	int check2=vfs_open(strvfs, O_WRONLY, 0, &init);
+	kprintf("\nCheck 2 %d\n",check2);
+	//if(!check2)
+	//{
+	stdout->file = init;
+	stdout->counter = 1;
+	stdout->offset = 0;
+	stdout->flags = O_WRONLY;
+	stdout->lock = lock_create("STDOUT lock");
+	curproc->filetable[1] = stdout;
+	//}
+	kfree(strvfs);
+
+	strvfs=kstrdup("con:");
+	// STDERR insertion :
+	int check3=vfs_open(strvfs, O_WRONLY, 0, &init);
+	kprintf("\nCheck 3 %d\n",check3);
+	//if(!check3)
+	//{
+	stderr->file = init;
+	stderr->counter = 1;
+	stderr->offset = 0;
+	stderr->flags = O_WRONLY;
+	stderr->lock = lock_create("STDERR lock");
+	curproc->filetable[2] = stderr;
+	//}
+	kfree(strvfs);
+
 	/* Warp to user mode. */
 	enter_new_process(0 /*argc*/, NULL /*userspace addr of argv*/,
 			  NULL /*userspace addr of environment*/,
@@ -106,4 +159,3 @@ runprogram(char *progname)
 	panic("enter_new_process returned\n");
 	return EINVAL;
 }
-
