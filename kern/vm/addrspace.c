@@ -50,6 +50,12 @@ as_create(void)
 		return NULL;
 	}
 
+	for(int i = 0; i < 5; i++){
+			as->sgmt[i] = NULL;
+	}
+
+	as->first_page = NULL;
+
 	/*
 	 * Initialize as needed.
 	 */
@@ -90,20 +96,22 @@ as_destroy(struct addrspace *as)
 void
 as_activate(void)
 {
+	int i, spl;
 	struct addrspace *as;
 
 	as = proc_getas();
 	if (as == NULL) {
-		/*
-		 * Kernel thread without an address space; leave the
-		 * prior address space in place.
-		 */
 		return;
 	}
 
-	/*
-	 * Write this.
-	 */
+	/* Disable interrupts on this CPU while frobbing the TLB. */
+	spl = splhigh();
+
+	for (i=0; i<NUM_TLB; i++) {
+		tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
+	}
+
+	splx(spl);
 }
 
 void
@@ -134,13 +142,32 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 	 * Write this.
 	 */
 
-	(void)as;
-	(void)vaddr;
-	(void)memsize;
-	(void)readable;
-	(void)writeable;
-	(void)executable;
-	return ENOSYS;
+	 // Not implementing permissions for now.
+	 (void)readable;
+	 (void)writeable;
+	 (void)executable;
+
+
+		vaddr_t last_vaddr = vaddr + memsize;
+
+		int npages = memsize/PAGE_SIZE;
+
+		if(memsize % PAGE_SIZE > 0){
+				npages++;
+		}
+
+		for(int i = 0; i < 5; i++){
+			if(as->sgmt[i] == NULL){
+				as->sgmt[i]->start = vaddr;
+				as->sgmt[i]->end = last_vaddr;
+				as->sgmt[i]->npages = npages;
+			}
+		}
+
+
+
+
+	 return ENOSYS;
 }
 
 int

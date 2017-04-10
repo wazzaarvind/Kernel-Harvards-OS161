@@ -179,6 +179,36 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
     (void) faulttype;
     (void) faultaddress;
 
+    int segFlag = 0;
+
+    // Can I use curproc?
+    for(int i = 0; i < 5; i++){
+       if(curproc->p_addrspace->sgmt[i] != NULL){
+         struct segment curseg = curproc->p_addrspace->sgmt[i];
+         if(faultaddress >= curseg.start && faultaddress < curseg.end){
+            segFlag = 1;
+         }
+       }
+    }
+
+    // If its not in one of the segments.
+    if(segFlag != 1){
+      return EFAULT;
+    }
+
+    // If it is, then find the corresponding PTE.
+    struct page_table *first = curproc->p_addrspace->first_page;
+
+    int pageFlag = 0;
+
+    // page align faultaddress and find coresponding page in the PTE.
+    while(first != NULL){
+      //
+      if(first->vaddr == faultaddress)
+    }
+
+    // Load TLB and return.
+
     return 0;
 }
 

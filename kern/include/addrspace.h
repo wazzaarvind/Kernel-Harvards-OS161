@@ -37,8 +37,22 @@
 
 #include <vm.h>
 #include "opt-dumbvm.h"
+#include <types.h>
 
 struct vnode;
+
+struct page_table {
+  paddr_t paddr;
+  vaddr_t vaddr;
+  int mem_or_disk; //mem=1,disk=2
+  struct page_table *next;
+}
+
+struct segment{
+  vaddr_t start;
+  vaddr_t end;
+  int npages;
+}
 
 
 /*
@@ -59,6 +73,9 @@ struct addrspace {
         paddr_t as_stackpbase;
 #else
         /* Put stuff here for your VM system */
+        struct segment sgmt[5];
+        struct page_table *first_page;
+
 #endif
 };
 
