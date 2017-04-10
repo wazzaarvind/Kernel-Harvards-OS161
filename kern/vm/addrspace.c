@@ -66,6 +66,11 @@ as_create(void)
 	 * Initialize as needed.
 	 */
 
+	/*as->stack_top = ;
+	as->stack_bottom = ;
+	as->heap_top = ;
+	as->heap_bottom = ;*/
+
 	return as;
 }
 
@@ -190,6 +195,8 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 		temp->next = &curseg;
 	}
 
+
+	//put heap top and bottom and stack top and bottom in here
 	 return ENOSYS;
 }
 
