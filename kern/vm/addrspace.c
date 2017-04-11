@@ -30,8 +30,8 @@
 #include <types.h>
 #include <kern/errno.h>
 #include <lib.h>
-#include <addrspace.h>
 #include <vm.h>
+#include <addrspace.h>
 #include <proc.h>
 #include <spl.h>
 #include <mips/tlb.h>
@@ -50,6 +50,8 @@ as_create(void)
 
 	as = kmalloc(sizeof(struct addrspace));
 	if (as == NULL) {
+		as->sgmt = NULL;
+		as->sgmt = NULL;
 		return NULL;
 	}
 
@@ -172,16 +174,16 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 
 	vaddr_t last_vaddr = vaddr + memsize;
 
-	struct segment curseg;
+	struct segment *curseg = kmalloc(sizeof(struct segment));
 
-	curseg.start = vaddr;
-	curseg.end = last_vaddr;
-	curseg.npages = npages;
-	curseg.next = NULL;
+	curseg->start = vaddr;
+	curseg->end = last_vaddr;
+	curseg->npages = npages;
+	curseg->next = NULL;
 
 	if(as->sgmt == NULL){
 		// This is the first segment.
-		as->sgmt = &curseg;
+		as->sgmt = curseg;
 
 	} else {
 
@@ -192,7 +194,7 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 				temp = temp->next;
 		}
 
-		temp->next = &curseg;
+		temp->next = curseg;
 	}
 
 
@@ -201,7 +203,7 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 
 	//ben says stack not required
 	//put heap top and bottom and stack top and bottom in here
-	 return ENOSYS;
+	 return 0;
 }
 
 int

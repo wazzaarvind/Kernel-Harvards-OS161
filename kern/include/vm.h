@@ -72,7 +72,7 @@ void vm_bootstrap(void);
 /* Fault handling function called by trap code */
 int vm_fault(int faulttype, vaddr_t faultaddress);
 
-vaddr_t alloc_upages();
+
 void free_upage(vaddr_t addr);
 
 
@@ -89,6 +89,8 @@ unsigned int coremap_used_bytes(void);
 
 /* TLB shootdown handling called from interprocessor_interrupt */
 void vm_tlbshootdown(const struct tlbshootdown *);
+
+vaddr_t alloc_upages(void);
 
 
 #endif /* _VM_H_ */
