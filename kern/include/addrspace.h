@@ -80,6 +80,7 @@ struct addrspace {
         vaddr_t stack_bottom;
         vaddr_t heap_top;
         vaddr_t heap_bottom;
+        //ben says stack not required
         // Add pointers to heap and stack.
 
 #endif

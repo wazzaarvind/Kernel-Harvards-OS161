@@ -188,14 +188,20 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
       return EFAULT;
     }
 
-    as = proc_getas();
-    if (as == NULL) {
+    //as = proc_getas();
+    //if (as == NULL) {
       /*
       * No address space set up. This is probably also a
       * kernel fault early in boot.
       */
-      return EFAULT;
-    }
+     // return EFAULT;
+    //}
+
+      KASSERT(as->sgmt!=NULL);
+      KASSERT(as->heap_top!=0);
+      KASSERT(as->heap_bottom!=0);
+      //KASSERT for stack?
+
 
 
     int segFlag = 0;
@@ -227,21 +233,23 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
     // page align faultaddress and find coresponding page in the PTE.
     while(first != NULL){
       //
-      if(first->vaddr == faultaddress)
+      if(first->vaddr == faultaddress)  //does this necessarily need to be the case? Will it never be in between?
       {
         pageFlag=1;
         break;
       }
       first=first->next;
     }
+    //check the same for heap and stack areas as well!
+
 
     if(pageFlag==1){
       /* Disable interrupts on this CPU while frobbing the TLB. */
       // TODO : KASSERT
 
-         spl = splhigh();
+         /*spl = splhigh();
 
-        for (i=0; i<NUM_TLB; i++) {
+        for (int i=0; i<NUM_TLB; i++) {
             tlb_read(&ehi, &elo, i);
             if (elo & TLBLO_VALID) {
                 continue;
@@ -259,7 +267,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
         elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
         tlb_random(ehi, elo);
         splx(spl);
-        return 0;
+        return 0;*/
     }
 
     // There is no PTE for the current vaddr_t.
@@ -271,7 +279,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
       {
         first=first->next;
       }
-      first->paddr = alloc_upages(); //page aligned address?
+      //first->paddr = alloc_upages(); //page aligned address?
       first->vaddr = KVADDR_TO_PADDR(first->paddr);
       first->next = NULL;
 
@@ -281,6 +289,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
       //
       return 0;
     }
+    return 0;
 }
 
 void vm_tlbshootdown(const struct tlbshootdown *ts)
@@ -290,7 +299,7 @@ void vm_tlbshootdown(const struct tlbshootdown *ts)
 }
 
 
-vaddr_t alloc_upages(){
+/*vaddr_t alloc_upages(){
 
   int npages=1;
   int alloc = 0;
@@ -351,7 +360,7 @@ vaddr_t alloc_upages(){
 
   return PADDR_TO_KVADDR(startAlloc * PAGE_SIZE);
 
-  return paddr;
+  //return paddr;
 }
 
 void free_upage(vaddr_t addr)
@@ -388,4 +397,4 @@ void free_upage(vaddr_t addr)
 
   spinlock_release(&vmlock);
 
-}
+}*/

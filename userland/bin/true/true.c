@@ -38,13 +38,14 @@
 int
 main(void)
 {
+	printf("\nHello World!\n");
 //printf("fork enter : ");
 	//printf("Hello");
 	/* Just exit with success. */
-	int pid = fork();
+	//int pid = fork();
 	//printf("Hello");
 	//printf("PID : %d",pid);
-  if (pid == 0)
+  /*if (pid == 0)
 	{
 		printf("\nHello from the child process!\n");
 		exit(0);
@@ -60,6 +61,6 @@ main(void)
 
 	}
 
-	 exit(0);;
+	 exit(0);;*/
 
 }

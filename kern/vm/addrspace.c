@@ -67,9 +67,9 @@ as_create(void)
 	 */
 
 	/*as->stack_top = ;
-	as->stack_bottom = ;
-	as->heap_top = ;
-	as->heap_bottom = ;*/
+	as->stack_bottom = ;*/
+	as->heap_top = 0;
+	as->heap_bottom = 0;
 
 	return as;
 }
@@ -196,6 +196,10 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 	}
 
 
+	as->heap_top = vaddr + memsize;
+	as->heap_bottom = vaddr + memsize;
+
+	//ben says stack not required
 	//put heap top and bottom and stack top and bottom in here
 	 return ENOSYS;
 }
