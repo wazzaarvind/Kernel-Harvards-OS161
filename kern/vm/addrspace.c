@@ -73,6 +73,9 @@ as_create(void)
 	as->heap_top = 0;
 	as->heap_bottom = 0;
 
+	as->stack_bottom = USERSTACK;
+	as->stack_top = USERSTACK - (50 * PAGE_SIZE);
+
 	return as;
 }
 
@@ -197,6 +200,13 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 
 		temp->next = curseg;
 	}
+
+	// struct segment *tempIter = curproc->p_addrspace->sgmt;
+	// int segCount = 0;
+	// while(tempIter != NULL){
+	// 	segCount++;
+	// 	tempIter = tempIter->next;
+	// }
 
 
 	as->heap_top = last_vaddr;

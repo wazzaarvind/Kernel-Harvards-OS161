@@ -227,12 +227,25 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
 
     struct segment *curseg = curproc->p_addrspace->sgmt;
 
+    // struct segment *tempIter = curproc->p_addrspace->sgmt;
+    // int segCount = 0;
+    // while(tempIter != NULL){
+    //   segCount++;
+    //   tempIter = tempIter->next;
+    // }
+
     while(curseg != NULL){
          if(faultaddress >= curseg->start && faultaddress < curseg->end){
             segFlag = 1;
             break;
          }
          curseg = curseg->next;
+    }
+
+    if(segFlag != 1){
+      if(faultaddress >= curproc->p_addrspace->stack_top && faultaddress < curproc->p_addrspace->stack_bottom){
+          segFlag = 1;
+      }
     }
 
     // If its not in one of the segments.
