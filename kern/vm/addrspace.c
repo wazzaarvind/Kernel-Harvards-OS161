@@ -83,52 +83,83 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	struct addrspace *newas;
 
 	newas = as_create();
+
 	if (newas==NULL) {
 		return ENOMEM;
 	}
 
+	// check if old is null.
+
+
 	newas->heap_top = old->heap_top;
 	newas->heap_bottom = old->heap_bottom;
-	newas->stack_top = old->heap_top;
-	newas->stack_bottom = old->heap_bottom;
+	newas->stack_top = old->stack_top;
+	newas->stack_bottom = old->stack_bottom;
+
+	// From as_create
+	newas->sgmt = NULL;
+	newas->first_page = NULL;
+	newas->last_page = NULL;
 
 	//Have to copy all segments and pages
-	int segcount = 0;
-	int pagecount = 0;
+	struct segment *oldPtr = old->sgmt;
+	struct segment *newPtr;
 
-	struct segment *old_seg_loop = old->sgmt;
-	while(old_seg_loop!=NULL)
-	{
-		segcount++;
-		old_seg_loop =  old_seg_loop->next;
+	// Copying segments one by one.
+	while(oldPtr != NULL){
+		newPtr = kmalloc(sizeof(struct segment));
+		newPtr->start = oldPtr->start;
+		newPtr->end = oldPtr->end;
+		newPtr->npages = oldPtr->npages;
+		newPtr->next = NULL;
+
+		if(newas->sgmt == NULL){
+			newas->sgmt = newPtr;
+		} else {
+
+			struct segment *temp = newas->sgmt;
+
+			while(temp->next != NULL){
+					temp = temp->next;
+			}
+
+			temp->next = newPtr;
+		}
+
+		oldPtr = oldPtr->next;
 	}
-	struct segment *current_segment = old->sgmt;
-	newas->sgmt = kmalloc(segcount*sizeof(struct segment));
 
-	struct page_table *old_pt_loop = old->first_page;
+	// Next copying the PTE and the pages!
+	struct page_table *oldPte = old->first_page;
+	struct page_table *newPte;
 
-	while(old_pt_loop!=NULL)
-	{
-		pagecount++;
-		old_pt_loop =  old_pt_loop->next;
+	while(oldPte != NULL){
+		newPte = kmalloc(sizeof(struct page_table));
+		newPte->paddr = oldPte->paddr;
+		newPte->vaddr = oldPte->vaddr;
+		newPte->mem_or_disk = oldPte->mem_or_disk;
+		newPte->next = NULL;
+
+		if(newas->last_page == NULL){
+			newas->last_page = newPte;
+			newas->first_page = newPte;
+		} else {
+			newas->last_page->next = newPte;
+			newas->last_page = newas->last_page->next;
+		}
+
+		// Now copy over the contents of the memory
+		memmove((void *)PADDR_TO_KVADDR(newPte->paddr),(const void *)PADDR_TO_KVADDR(oldPte->paddr),PAGE_SIZE);
+
+		oldPte = oldPte->next;
 	}
-	newas->first_page = kammloc(pagecount*sizeof(struct page_table));
-	//memcpy
-	memcpy(newas->first_page,old->first_page,segcount*sizeof(struct segment));
 
-	//do we need to use memcpy?
-	/*while(current_segment!=NULL)
-	{
-
-	}*/
-		
 	/*
 	 * Write this.
 	 */
 
-	(void)old;
-
 	*ret = newas;
+
 	return 0;
 }
 
@@ -146,16 +177,26 @@ as_destroy(struct addrspace *as)
 	 */
 	 while(as->sgmt!=NULL)
 	 {
-	 	struct segemt *segdes = as->sgmt;
+	 	struct segment *segdes = as->sgmt;
+		as->sgmt=as->sgmt->next;
 	 	kfree(segdes);
-	 	as->sgmt=as->sgmt->next;
 	 }
 
+	 // First take away all the physical pages allocated :
+	 struct page_table *pagedes = as->first_page;
+
+	 while(pagedes != NULL)
+	 {
+	 		free_upage(pagedes->paddr);
+			pagedes = pagedes->next;
+	 }
+
+	 // Next destroy the PTE.
 	 while(as->first_page!=NULL)
 	 {
-	 	struct page_table *pagedes = as->first_page;
-	 	kfree(pagedes); //unsure as we need to destroy the structure
-	 	as->first_page=as->sgmt->next;
+	 	pagedes = as->first_page;
+		as->first_page = as->first_page->next;
+		kfree(pagedes);
 	 }
 
 	kfree(as);

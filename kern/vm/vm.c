@@ -283,18 +283,18 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
 
         spl = splhigh();
 
-        // for (int i=0; i<NUM_TLB; i++) {
-        //     tlb_read(&ehi, &elo, i);
-        //     if (elo & TLBLO_VALID) {
-        //         continue;
-        //       }
-        //     ehi = faultaddress;
-        //     elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-        //     DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
-        //     tlb_write(ehi, elo, i);
-        //     splx(spl);
-        //     return 0;
-        // }
+        for (int i=0; i<NUM_TLB; i++) {
+            tlb_read(&ehi, &elo, i);
+            if (elo & TLBLO_VALID) {
+                continue;
+              }
+            ehi = faultaddress;
+            elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+            DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
+            tlb_write(ehi, elo, i);
+            splx(spl);
+            return 0;
+        }
 
         // TLB is currently full so evicting a TLB entry
         ehi = faultaddress;
@@ -333,18 +333,18 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
       splx(spl);
       return 0;
 
-      // for (int i=0; i<NUM_TLB; i++) {
-      //     tlb_read(&ehi, &elo, i);
-      //     if (elo & TLBLO_VALID) {
-      //         continue;
-      //       }
-      //     ehi = faultaddress;
-      //     elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-      //     DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
-      //     tlb_write(ehi, elo, i);
-      //     splx(spl);
-      //     return 0;
-      // }
+      for (int i=0; i<NUM_TLB; i++) {
+          tlb_read(&ehi, &elo, i);
+          if (elo & TLBLO_VALID) {
+              continue;
+            }
+          ehi = faultaddress;
+          elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+          DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
+          tlb_write(ehi, elo, i);
+          splx(spl);
+          return 0;
+      }
 
       // TLB is currently full so evicting a TLB entry
     }
@@ -433,7 +433,7 @@ void free_upage(paddr_t addr)
   spinlock_acquire(&vmlock);
 
   for(i = 0; i < (int) tpages; i++){
-    iter_addr = PADDR_TO_KVADDR(i * PAGE_SIZE);
+    iter_addr = i * PAGE_SIZE;
     if(iter_addr == addr){
       break;
     }
