@@ -25,14 +25,14 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
 
   if(curproc->filetable[fd]==NULL)
      	return EBADF;
+
   if(buf==NULL||buf>=(void *)0x80000000||buf==(void *)0x40000000)
   		return EFAULT;
-  	if((curproc->filetable[fd]->flags & O_ACCMODE)==O_RDONLY)
-  	{
+
+  if((curproc->filetable[fd]->flags & O_ACCMODE)==O_RDONLY) {
      	*retval=-1;
      	return EBADF;
-    }
-
+  }
   /*Achuth edits : Fetching the stdout file handle and writing to the file.*/
 
   struct uio uioWrite;
@@ -70,30 +70,33 @@ int sys_read(int fd, void *buf, size_t buflen, ssize_t *retval){
 
 	if(fd<0||fd>=OPEN_MAX)
         	return EBADF;
-     if(curproc->filetable[fd]==NULL)
+
+  if(curproc->filetable[fd]==NULL)
      	return EBADF;
-     if(buf==NULL||buf>=(void *)0x80000000||buf==(void *)0x40000000)
+
+  if(buf==NULL||buf>=(void *)0x80000000||buf==(void *)0x40000000)
   		return EFAULT;
-     if((curproc->filetable[fd]->flags & O_ACCMODE)==O_WRONLY)
-     {
+
+  if((curproc->filetable[fd]->flags & O_ACCMODE)==O_WRONLY) {
      	*retval=-1;
      	return EBADF;
-     }
-	  struct uio uioRead;
-  	struct iovec iov;
+  }
+
+  struct uio uioRead;
+  struct iovec iov;
 
 
   lock_acquire(curproc->filetable[fd]->lock);
 
-	  iov.iov_ubase = (userptr_t) buf;
-	  iov.iov_len = buflen;
-	  uioRead.uio_iov = &iov;
-  	uioRead.uio_iovcnt = 1;
-  	uioRead.uio_offset = curproc->filetable[fd]->offset; //not sure
-  	uioRead.uio_resid = buflen;
-  	uioRead.uio_segflg = UIO_USERSPACE;
-  	uioRead.uio_rw = UIO_READ;
-  	uioRead.uio_space = curproc->p_addrspace;
+  iov.iov_ubase = (userptr_t) buf;
+  iov.iov_len = buflen;
+  uioRead.uio_iov = &iov;
+	uioRead.uio_iovcnt = 1;
+	uioRead.uio_offset = curproc->filetable[fd]->offset; //not sure
+	uioRead.uio_resid = buflen;
+	uioRead.uio_segflg = UIO_USERSPACE;
+	uioRead.uio_rw = UIO_READ;
+	uioRead.uio_space = curproc->p_addrspace;
 
 	int err = VOP_READ(curproc->filetable[fd]->file, &uioRead);
 
@@ -157,8 +160,8 @@ int sys_open(char *path_file, int flags, mode_t mode, int *retval){
 
 
 	*retval=file_index;
-	return 0;
 
+	return 0;
 }
 
 
@@ -175,7 +178,7 @@ int sys_close(int fd){
   if(curproc->filetable[fd]->counter!=0){
 	     curproc->filetable[fd]->counter--;
   }
-	if(curproc->filetable[fd]->counter == 0 && fd>2)
+	if(curproc->filetable[fd]->counter == 0)
 	{
 	 lock_destroy(curproc->filetable[fd]->lock);
 	 vfs_close(curproc->filetable[fd]->file);
@@ -198,7 +201,7 @@ int sys_dup2(int fd_old, int fd_new, int *retval){
 	if(curproc->filetable[fd_new]!=NULL)
 		sys_close(fd_new);
 	curproc->filetable[fd_new]=curproc->filetable[fd_old];
-	curproc->filetable[fd_new]->counter++;
+	curproc->filetable[fd_old]->counter++;
 	*retval=fd_new;
   return 0;
 }
@@ -208,16 +211,16 @@ int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos){
 
 	//
 
-	struct stat *stats_file=kmalloc(sizeof(struct stat));
-	if(fd<0||fd>=OPEN_MAX||curproc->filetable[fd]==NULL)
+	struct stat stats_file;
+
+  if(fd<0||fd>=OPEN_MAX||curproc->filetable[fd]==NULL)
 		return EBADF;
 
-	//struct vnode *lseek_vn= kmalloc(sizeof(lseek_vn));
 
 	int check=VOP_ISSEEKABLE(curproc->filetable[fd]->file);
+
 	if(check==0)
 		{
-			//kfree(stats_file);
 			return ESPIPE;
 		}
 
@@ -225,7 +228,6 @@ int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos){
 	{	curproc->filetable[fd]->offset=pos; //might need to change type of offset in proc.h to off_t
 		if(curproc->filetable[fd]->offset<0)
 			{
-				//kfree(stats_file);
 				return EINVAL;
 			}
 	}
@@ -235,36 +237,30 @@ int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos){
 	{
 		curproc->filetable[fd]->offset+=pos;
 		if(curproc->filetable[fd]->offset<0)
-		{	
-			//kfree(stats_file);
+		{
 			return EINVAL;
 		}
 	}
 	else if(whence==SEEK_END)
 	{
-		int check1=VOP_STAT(curproc->filetable[fd]->file,stats_file);
+		int check1=VOP_STAT(curproc->filetable[fd]->file, &stats_file);
 		if(check1==0)
 		{
-			//kfree(stats_file);
-			curproc->filetable[fd]->offset=pos+stats_file->st_size;
+			curproc->filetable[fd]->offset=pos+stats_file.st_size;
 		}
 		else
 		{
-			//kfree(stats_file);
 			return check1;
 		}
 		if(curproc->filetable[fd]->offset<0)
 		{
-			//kfree(stats_file);
 			return EINVAL;
 		}
 	}
 	else
-	{	
-		//kfree(stats_file);
+	{
 		return EINVAL;
 	}
-	//kfree(stats_file);
 	*new_pos=curproc->filetable[fd]->offset;
 
 	return 0;
