@@ -162,7 +162,7 @@ int sys_execv(const char *progname, char **args){
   //kprintf("\nWorks\n");
 
   //(void) **args;
-  int l=0;
+  //int l=0;
   size_t length;
   char *program_kern=(char *)kmalloc(sizeof(char)*PATH_MAX); //might need to kmalloc
   int countAlloc = 0;
@@ -313,7 +313,7 @@ int sys_execv(const char *progname, char **args){
 	/* Define the user stack in the address space */
 	result = as_define_stack(curproc->p_addrspace, &stackptr);
 	if (result) {
-    for(l=0;kernel_args[l]!=NULL;l++)
+    //for(l=0;kernel_args[l]!=NULL;l++)
         //kfree(kernel_args[l]);
     //kfree(kernel_args);
 		return result;
