@@ -135,7 +135,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 
 	while(oldPte != NULL){
 		newPte = kmalloc(sizeof(struct page_table));
-		newPte->paddr = oldPte->paddr;
+		newPte->paddr = alloc_upages();
 		newPte->vaddr = oldPte->vaddr;
 		newPte->mem_or_disk = oldPte->mem_or_disk;
 		newPte->next = NULL;
