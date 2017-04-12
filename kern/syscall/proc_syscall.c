@@ -99,10 +99,10 @@ int sys_waitpid(pid_t pid, int *status, int options, int *retval)
     return EFAULT;
 
     // Going back to the old setting :
-  //  if(proctable[pid]->exit_status!=1)
-  //   {
+   if(proctable[pid]->exit_status!=1)
+    {
       P(proctable[pid]->proc_sem);  // wwait for child
-//    }
+   }
 
 
 
@@ -165,6 +165,7 @@ int sys_execv(const char *progname, char **args){
   int l=0;
   size_t length;
   char *program_kern=(char *)kmalloc(sizeof(char)*PATH_MAX); //might need to kmalloc
+  int countAlloc = 0;
 
   if(program_kern==NULL)
     return ENOMEM;
@@ -205,7 +206,7 @@ int sys_execv(const char *progname, char **args){
    //kprintf("\nWorks2\n");
 
    if(kernel_args==NULL) {
-     kfree(kernel_args);
+     //kfree(kernel_args);
      kfree(program_kern);
      return ENOMEM;
    }
@@ -218,11 +219,12 @@ int sys_execv(const char *progname, char **args){
   //Copy each value in user memory to kernel memory
     //kprintf("ARGS i : %p", args[i]);
 
-    kernel_args[i] = (char *)kmalloc(sizeof(char)*strlen(args[i])+1); //might need dummy operation for size //length
+    kernel_args[i] = (char *)kmalloc(sizeof(char)*strlen(args[i])+1);
+    countAlloc++; //might need dummy operation for size //length
     if(kernel_args[i] == NULL){
       kfree(program_kern);
-      kfree(kernel_args[i]);
-      kfree(kernel_args);
+      //kfree(kernel_args[i]);
+      //kfree(kernel_args);
       return EFAULT;
     }
     //kprintf("args is %s",args[i]);
@@ -232,9 +234,9 @@ int sys_execv(const char *progname, char **args){
       // for(int l = 0; args[l]!= NULL; l++){
       //
       // }
-      for(l=0;kernel_args[i]!=NULL;l++)
-        kfree(kernel_args[l]);
-      kfree(kernel_args);
+      //for(l=0;kernel_args[l]!=NULL;l++)
+      //  kfree(kernel_args[l]);
+      //kfree(kernel_args);
       kfree(program_kern);
       return EFAULT;
     }
@@ -246,9 +248,9 @@ int sys_execv(const char *progname, char **args){
   //kprintf("\nArgc is %d\n",argc);
 
   if(argc > ARG_MAX){
-    for(l=0;kernel_args[i]!=NULL;l++)
-        kfree(kernel_args[l]);
-    kfree(kernel_args);
+    //for(l=0;kernel_args[l]!=NULL;l++)
+    //    kfree(kernel_args[l]);
+    //kfree(kernel_args);
     kfree(program_kern);
     return ENOMEM;
   }
@@ -270,9 +272,9 @@ int sys_execv(const char *progname, char **args){
   kfree(program_kern);
 
 	if (result) {
-      for(l=0;kernel_args[i]!=NULL;l++)
-        kfree(kernel_args[l]);
-      kfree(kernel_args);
+      //for(l=0;kernel_args[l]!=NULL;l++)
+        //kfree(kernel_args[l]);
+      //kfree(kernel_args);
 		  return result;
 	}
 
@@ -284,9 +286,9 @@ int sys_execv(const char *progname, char **args){
 	/* Create a new address space. */
 	curproc->p_addrspace = as_create();
 	if (curproc->p_addrspace == NULL) {
-    for(l=0;kernel_args[i]!=NULL;l++)
-        kfree(kernel_args[l]);
-    kfree(kernel_args);
+    //for(l=0;kernel_args[l]!=NULL;l++)
+        //kfree(kernel_args[l]);
+    //kfree(kernel_args);
 		vfs_close(v);
 		return ENOMEM;
 	}
@@ -298,9 +300,9 @@ int sys_execv(const char *progname, char **args){
 	/* Load the executable. */
 	result = load_elf(v, &entrypoint);
 	if (result) {
-    for(l=0;kernel_args[i]!=NULL;l++)
-        kfree(kernel_args[l]);
-    kfree(kernel_args);
+    //for(l=0;kernel_args[l]!=NULL;l++)
+        //kfree(kernel_args[l]);
+  //  kfree(kernel_args);
 		vfs_close(v);
 		return result;
 	}
@@ -311,9 +313,9 @@ int sys_execv(const char *progname, char **args){
 	/* Define the user stack in the address space */
 	result = as_define_stack(curproc->p_addrspace, &stackptr);
 	if (result) {
-    for(l=0;kernel_args[i]!=NULL;l++)
-        kfree(kernel_args[l]);
-    kfree(kernel_args);
+    for(l=0;kernel_args[l]!=NULL;l++)
+        //kfree(kernel_args[l]);
+    //kfree(kernel_args);
 		return result;
 	}
 
@@ -353,12 +355,12 @@ int sys_execv(const char *progname, char **args){
       int check4=copyout((const void *)stack_copy,(userptr_t)stackptr,(size_t)arg_length); //copy it back to user sapce
       if(check4){
         kfree(stack_copy);
-        for(l=0;kernel_args[i]!=NULL;l++)
-        kfree(kernel_args[l]);
-        kfree(kernel_args);
+        //for(l=0;kernel_args[i]!=NULL;l++)
+          //kfree(kernel_args[l]);
+      //  kfree(kernel_args);
         return check4;
       }
-
+        kfree(kernel_args[i]);
         kernel_args[i]=(char *)stackptr;
         i++;
         kfree(stack_copy);
@@ -376,21 +378,26 @@ int sys_execv(const char *progname, char **args){
         count+=8;
 
       if(check5){
-        for(l=0;kernel_args[i]!=NULL;l++)
-          kfree(kernel_args[l]);
-        kfree(kernel_args);
+        //for(l=0;kernel_args[l]!=NULL;l++)
+        //  kfree(kernel_args[l]);
+        //kfree(kernel_args);
         return check5;
       }
       }
-      for(l=0;kernel_args[i]!=NULL;l++)
-        kfree(kernel_args[l]);
+      //kprintf("Counter : %d\n", countAlloc);
+      //for(i=0;kernel_args[i]!=NULL;i++){
+          //kprintf("i : %d\n", i);
+          //kfree(kernel_args[i]);
+          //kernel_args[i] = NULL;
+      //}
+      //kprintf("kfree done, Counter : %d\n", i);
+      //   ;
+      // }
+      //kfree(kernel_args[0]);
       kfree(kernel_args);
 
       //kfree(stack_copy);
       //may need to do kfree's
-
-
-
 
 
 
