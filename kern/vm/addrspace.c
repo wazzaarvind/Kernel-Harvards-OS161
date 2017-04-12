@@ -50,8 +50,6 @@ as_create(void)
 
 	as = kmalloc(sizeof(struct addrspace));
 	if (as == NULL) {
-		as->sgmt = NULL;
-		as->sgmt = NULL;
 		return NULL;
 	}
 
