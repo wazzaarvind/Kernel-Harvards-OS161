@@ -68,8 +68,6 @@ as_create(void)
 	 * Initialize as needed.
 	 */
 
-	/*as->stack_top = ;
-	as->stack_bottom = ;*/
 	as->heap_top = 0;
 	as->heap_bottom = 0;
 
@@ -89,6 +87,41 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		return ENOMEM;
 	}
 
+	newas->heap_top = old->heap_top;
+	newas->heap_bottom = old->heap_bottom;
+	newas->stack_top = old->heap_top;
+	newas->stack_bottom = old->heap_bottom;
+
+	//Have to copy all segments and pages
+	int segcount = 0;
+	int pagecount = 0;
+
+	struct segment *old_seg_loop = old->sgmt;
+	while(old_seg_loop!=NULL)
+	{
+		segcount++;
+		old_seg_loop =  old_seg_loop->next;
+	}
+	struct segment *current_segment = old->sgmt;
+	newas->sgmt = kmalloc(segcount*sizeof(struct segment));
+
+	struct page_table *old_pt_loop = old->first_page;
+
+	while(old_pt_loop!=NULL)
+	{
+		pagecount++;
+		old_pt_loop =  old_pt_loop->next;
+	}
+	newas->first_page = kammloc(pagecount*sizeof(struct page_table));
+	//memcpy
+	memcpy(newas->first_page,old->first_page,segcount*sizeof(struct segment));
+
+	//do we need to use memcpy?
+	/*while(current_segment!=NULL)
+	{
+
+	}*/
+		
 	/*
 	 * Write this.
 	 */
@@ -102,9 +135,28 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 void
 as_destroy(struct addrspace *as)
 {
+
+	as->heap_top = 0;
+	as->heap_bottom = 0;
+
+	as->stack_bottom = 0;
+	as->stack_top = 0;
 	/*
 	 * Clean up as needed.
 	 */
+	 while(as->sgmt!=NULL)
+	 {
+	 	struct segemt *segdes = as->sgmt;
+	 	kfree(segdes);
+	 	as->sgmt=as->sgmt->next;
+	 }
+
+	 while(as->first_page!=NULL)
+	 {
+	 	struct page_table *pagedes = as->first_page;
+	 	kfree(pagedes); //unsure as we need to destroy the structure
+	 	as->first_page=as->sgmt->next;
+	 }
 
 	kfree(as);
 }
@@ -133,6 +185,8 @@ as_activate(void)
 void
 as_deactivate(void)
 {
+
+
 	/*
 	 * Write this. For many designs it won't need to actually do
 	 * anything. See proc.c for an explanation of why it (might)
@@ -201,12 +255,6 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 		temp->next = curseg;
 	}
 
-	// struct segment *tempIter = curproc->p_addrspace->sgmt;
-	// int segCount = 0;
-	// while(tempIter != NULL){
-	// 	segCount++;
-	// 	tempIter = tempIter->next;
-	// }
 
 
 	as->heap_top = last_vaddr;

@@ -194,6 +194,7 @@ int sys_dup2(int fd_old, int fd_new, int *retval){
 		return EBADF;
 	if(fd_old<0||fd_old>=OPEN_MAX)
 		return EBADF;
+	kprintf("FDS %d %d",fd_old,fd_new);
 
 	if(curproc->filetable[fd_old]==NULL)
 		return EBADF;
