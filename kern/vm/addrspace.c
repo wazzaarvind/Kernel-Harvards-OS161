@@ -59,6 +59,8 @@ as_create(void)
 	as->sgmt = NULL;
 
 	as->first_page = NULL;
+	as->last_page = NULL;
+
 
 	// Make address 0.
 
@@ -170,7 +172,7 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 	(void)executable;
 
 
-	vaddr_t last_vaddr = vaddr + memsize;
+	vaddr_t last_vaddr = vaddr + (npages * PAGE_SIZE);
 
 	struct segment *curseg = kmalloc(sizeof(struct segment));
 
@@ -182,6 +184,7 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 	if(as->sgmt == NULL){
 		// This is the first segment.
 		as->sgmt = curseg;
+		as->sgmt->next = NULL;
 
 	} else {
 
@@ -196,8 +199,8 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 	}
 
 
-	as->heap_top = vaddr + memsize;
-	as->heap_bottom = vaddr + memsize;
+	as->heap_top = last_vaddr;
+	as->heap_bottom = last_vaddr;
 
 	//ben says stack not required
 	//put heap top and bottom and stack top and bottom in here

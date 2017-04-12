@@ -76,6 +76,7 @@ struct addrspace {
         /* Put stuff here for your VM system */
         struct segment *sgmt;
         struct page_table *first_page;
+        struct page_table *last_page;
         vaddr_t stack_top;
         vaddr_t stack_bottom;
         vaddr_t heap_top;

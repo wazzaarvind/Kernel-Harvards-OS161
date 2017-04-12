@@ -223,7 +223,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
     // TODO : curproc->p_addrspace->sgmt KASSERT
     //
     // Page align to retrieve the PTE.
-    faultaddress &= PAGE_FRAME;
+    //faultaddress &= PAGE_FRAME;
 
     struct segment *curseg = curproc->p_addrspace->sgmt;
 
@@ -239,6 +239,9 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
     if(segFlag != 1){
       return EFAULT;
     }
+
+    faultaddress &= PAGE_FRAME;
+
 
     // If it is, then find the corresponding PTE.
     struct page_table *first = curproc->p_addrspace->first_page;
@@ -259,27 +262,26 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
     //check the same for heap and stack areas as well!
     // if pageFlag == 1 : The requested page already exists in the page table.
     // else : Allocate a new page and physical memory.
-
     if(pageFlag==1){
       /* Disable interrupts on this CPU while frobbing the TLB. */
       // TODO : KASSERT
-      //
+
         paddr_t paddr = first->paddr;
 
         spl = splhigh();
 
-        for (int i=0; i<NUM_TLB; i++) {
-            tlb_read(&ehi, &elo, i);
-            if (elo & TLBLO_VALID) {
-                continue;
-              }
-            ehi = faultaddress;
-            elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-            DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
-            tlb_write(ehi, elo, i);
-            splx(spl);
-            return 0;
-        }
+        // for (int i=0; i<NUM_TLB; i++) {
+        //     tlb_read(&ehi, &elo, i);
+        //     if (elo & TLBLO_VALID) {
+        //         continue;
+        //       }
+        //     ehi = faultaddress;
+        //     elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+        //     DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
+        //     tlb_write(ehi, elo, i);
+        //     splx(spl);
+        //     return 0;
+        // }
 
         // TLB is currently full so evicting a TLB entry
         ehi = faultaddress;
@@ -292,28 +294,19 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
     // There is no PTE for the current vaddr_t.
     if(pageFlag==0)
     {
-      struct page_table *iter = curproc->p_addrspace->first_page;
-      struct page_table *prev = NULL;
-      // This is the not first page.
-
-      while(iter!=NULL)
-        {
-          prev = iter;
-          iter = iter->next;
-        }
-
-
       // So create one
       struct page_table *cur_page = kmalloc(sizeof(struct page_table));
 
-      cur_page->paddr = alloc_upages(); //page aligned address?
       cur_page->vaddr = faultaddress;
+      cur_page->paddr = alloc_upages(); //page aligned address?
       cur_page->next = NULL;
 
-      iter = cur_page;
-
-      if(prev != NULL){
-        prev->next = cur_page;
+      if(curproc->p_addrspace->last_page == NULL){
+        curproc->p_addrspace->last_page = cur_page;
+        curproc->p_addrspace->first_page = cur_page;
+      } else {
+        curproc->p_addrspace->last_page->next = cur_page;
+        curproc->p_addrspace->last_page = curproc->p_addrspace->last_page->next;
       }
 
       paddr_t paddr = cur_page->paddr;
@@ -321,26 +314,26 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
       // Fill up the TLB.
       // Load TLB and return.
       spl = splhigh();
-
-      for (int i=0; i<NUM_TLB; i++) {
-          tlb_read(&ehi, &elo, i);
-          if (elo & TLBLO_VALID) {
-              continue;
-            }
-          ehi = faultaddress;
-          elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-          DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
-          tlb_write(ehi, elo, i);
-          splx(spl);
-          return 0;
-      }
-
-      // TLB is currently full so evicting a TLB entry
       ehi = faultaddress;
       elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
       tlb_random(ehi, elo);
       splx(spl);
       return 0;
+
+      // for (int i=0; i<NUM_TLB; i++) {
+      //     tlb_read(&ehi, &elo, i);
+      //     if (elo & TLBLO_VALID) {
+      //         continue;
+      //       }
+      //     ehi = faultaddress;
+      //     elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+      //     DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
+      //     tlb_write(ehi, elo, i);
+      //     splx(spl);
+      //     return 0;
+      // }
+
+      // TLB is currently full so evicting a TLB entry
     }
 
     return EFAULT;
@@ -412,12 +405,13 @@ vaddr_t alloc_upages(void){
 
   spinlock_release(&vmlock);
 
-  return PADDR_TO_KVADDR(startAlloc * PAGE_SIZE);
+  return startAlloc * PAGE_SIZE;
 
   //return paddr;
 }
 
-void free_upage(vaddr_t addr)
+// Change this
+void free_upage(paddr_t addr)
 {
   int i = 0;
   int pagesToInvalidate = 0;

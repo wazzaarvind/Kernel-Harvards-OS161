@@ -106,8 +106,7 @@ runprogram(char *progname)
 
 	char *strvfs=kstrdup("con:");
 	// STDIN insertion :
-	int check1=vfs_open(strvfs, O_RDONLY, 0, &init);
-	kprintf("\nCheck 1 %d\n",check1);
+	vfs_open(strvfs, O_RDONLY, 0, &init);
 	//if(check1)
 	//{
 	stdin->file = init;
@@ -122,8 +121,7 @@ runprogram(char *progname)
 
 	strvfs=kstrdup("con:");
 	// STDOUT insertion :
-	int check2=vfs_open(strvfs, O_WRONLY, 0, &init);
-	kprintf("\nCheck 2 %d\n",check2);
+	vfs_open(strvfs, O_WRONLY, 0, &init);
 	//if(!check2)
 	//{
 	stdout->file = init;
@@ -137,8 +135,7 @@ runprogram(char *progname)
 
 	strvfs=kstrdup("con:");
 	// STDERR insertion :
-	int check3=vfs_open(strvfs, O_WRONLY, 0, &init);
-	kprintf("\nCheck 3 %d\n",check3);
+	vfs_open(strvfs, O_WRONLY, 0, &init);
 	//if(!check3)
 	//{
 	stderr->file = init;
