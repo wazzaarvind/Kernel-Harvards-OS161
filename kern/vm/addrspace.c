@@ -30,9 +30,12 @@
 #include <types.h>
 #include <kern/errno.h>
 #include <lib.h>
-#include <addrspace.h>
 #include <vm.h>
+#include <addrspace.h>
 #include <proc.h>
+#include <spl.h>
+#include <mips/tlb.h>
+
 
 /*
  * Note! If OPT_DUMBVM is set, as is the case until you start the VM
@@ -50,9 +53,23 @@ as_create(void)
 		return NULL;
 	}
 
+	//for(int i = 0; i < 5; i++){
+			//as->sgmt[i] = NULL;
+	//}
+	as->sgmt = NULL;
+
+	as->first_page = NULL;
+
+	// Make address 0.
+
 	/*
 	 * Initialize as needed.
 	 */
+
+	/*as->stack_top = ;
+	as->stack_bottom = ;*/
+	as->heap_top = 0;
+	as->heap_bottom = 0;
 
 	return as;
 }
@@ -90,20 +107,22 @@ as_destroy(struct addrspace *as)
 void
 as_activate(void)
 {
+	int i, spl;
 	struct addrspace *as;
 
 	as = proc_getas();
 	if (as == NULL) {
-		/*
-		 * Kernel thread without an address space; leave the
-		 * prior address space in place.
-		 */
 		return;
 	}
 
-	/*
-	 * Write this.
-	 */
+	/* Disable interrupts on this CPU while frobbing the TLB. */
+	spl = splhigh();
+
+	for (i=0; i<NUM_TLB; i++) {
+		tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
+	}
+
+	splx(spl);
 }
 
 void
@@ -134,13 +153,55 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 	 * Write this.
 	 */
 
-	(void)as;
-	(void)vaddr;
-	(void)memsize;
+	 size_t npages;
+
+	 /* Align the region. First, the base... */
+	memsize += vaddr & ~(vaddr_t)PAGE_FRAME;
+	vaddr &= PAGE_FRAME;
+
+	/* ...and now the length. */
+	memsize = (memsize + PAGE_SIZE - 1) & PAGE_FRAME;
+
+	npages = memsize / PAGE_SIZE;
+
+	 // Not implementing permissions for now.
 	(void)readable;
 	(void)writeable;
 	(void)executable;
-	return ENOSYS;
+
+
+	vaddr_t last_vaddr = vaddr + memsize;
+
+	struct segment *curseg = kmalloc(sizeof(struct segment));
+
+	curseg->start = vaddr;
+	curseg->end = last_vaddr;
+	curseg->npages = npages;
+	curseg->next = NULL;
+
+	if(as->sgmt == NULL){
+		// This is the first segment.
+		as->sgmt = curseg;
+
+	} else {
+
+		struct segment *temp = as->sgmt;//= *((struct segment *)as->sgmt);
+
+		while(temp->next != NULL){
+				//temp = *((struct segment *)temp.next);
+				temp = temp->next;
+		}
+
+		temp->next = curseg;
+	}
+
+
+	as->heap_top = vaddr + memsize;
+	as->heap_bottom = vaddr + memsize;
+
+	//ben says stack not required
+	//put heap top and bottom and stack top and bottom in here
+	 return 0;
 }
 
 int
