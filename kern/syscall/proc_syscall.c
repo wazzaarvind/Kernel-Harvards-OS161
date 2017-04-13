@@ -412,3 +412,41 @@ int sys_execv(const char *progname, char **args){
 
 
 }
+
+
+int sys_sbrk(intptr_t amount, int *retval)
+{
+  kprintf("\nAmount : %d\n",(int)amount);
+  struct addrspace *as = curproc->p_addrspace;
+  if(as==NULL)
+    return EINVAL;
+  vaddr_t vaddr_to_free;
+
+  //Top is start and bottom is end
+
+  kprintf("Initial value : %d",curproc->p_addrspace->heap_bottom);
+
+  int returnval = curproc->p_addrspace->heap_bottom;
+
+  if(as->heap_bottom + amount < as->heap_top)
+    return EINVAL;
+  if(amount + as->heap_bottom >= as->stack_top)
+    return ENOMEM;
+  if(amount+ as->heap_bottom < as->heap_bottom)
+  {
+    int i
+    vaddr_to_free = (as->heap_bottom + amount)&PAGE_FRAME;
+    int npages = (amount/4096)*-1;
+    for(i=0;i<npages;i++)
+      free_upage(KVADDR_TO_PADDR(vaddr_to_free));
+    curproc->p_addrspace->heap_bottom = curproc->p_addrspace->heap_bottom + amount;
+    return 0;
+  }
+
+  curproc->p_addrspace->heap_bottom = curproc->p_addrspace->heap_bottom + amount;
+  kprintf("Final value : %d",curproc->p_addrspace->heap_bottom);
+  *retval = returnval;
+  return 0;
+
+
+}
