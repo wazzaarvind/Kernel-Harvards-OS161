@@ -12,3 +12,5 @@ int	sys__exit(int exitcode);
 int sys_getpid(pid_t *retval);
 
 int sys_execv(const char *program, char **args); 
+
+int sys_sbrk(intptr_t amount, int *retval);
