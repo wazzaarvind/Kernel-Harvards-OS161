@@ -13,6 +13,9 @@
 #include <kern/fcntl.h>
 #include <vfs.h>
 #include <limits.h>
+#include <mips/tlb.h>
+#include <spl.h>
+
 
 //int counter=0;
 
@@ -416,11 +419,20 @@ int sys_execv(const char *progname, char **args){
 
 int sys_sbrk(intptr_t amount, int *retval)
 {
+
+
   //kprintf("\nAmount : %d\n",(int)amount);
   struct addrspace *as = curproc->p_addrspace;
   if(as==NULL)
     return EINVAL;
   vaddr_t vaddr_to_free;
+
+  struct page_table *pte1 = curproc->p_addrspace->first_page;
+  kprintf("\nAmount is %d\n",(int)amount);
+  while(pte1!= NULL){
+    kprintf("Pre %d\n",pte1->vaddr);
+    pte1=pte1->next;
+  }
 
   //Top is start and bottom is end
 
@@ -430,24 +442,73 @@ int sys_sbrk(intptr_t amount, int *retval)
 
   //kprintf("retval : %d",returnval);
 
-
   if(as->heap_bottom + amount < as->heap_top)
     return EINVAL;
   if(amount + as->heap_bottom >= as->stack_top)
-    return -1;
+    return ENOMEM;
   if(amount+ as->heap_bottom < as->heap_bottom)
   {
-    vaddr_to_free = (as->heap_bottom)&PAGE_FRAME;
+    vaddr_to_free = (as->heap_bottom )&PAGE_FRAME;
+    kprintf("vaddr to free : %d", vaddr_to_free);
     int npages = (amount/4096)*-1;
     for(int i=0;i<npages;i++)
     {
-        free_upage(KVADDR_TO_PADDR(vaddr_to_free));
+        vaddr_to_free = (as->heap_bottom - PAGE_SIZE)&PAGE_FRAME;
+        kprintf("vaddr to free : %d", vaddr_to_free);
+        struct page_table *pte = curproc->p_addrspace->first_page;
+
+        while(pte!= NULL){
+          //kprintf("Add %d %d",pte->vaddr,vaddr_to_free);
+            if(pte->vaddr == vaddr_to_free){
+              //kprintf("Add %d %d",pte->vaddr,vaddr_to_free);
+              break;
+            }
+
+            pte = pte->next;
+        }
+
         vaddr_to_free = vaddr_to_free - 4096;
+
+        if(pte  == NULL){
+            continue;
+        }
+        free_upage(pte->paddr);
+
+        // Free the PTE.
+        struct page_table *prev = curproc->p_addrspace->first_page;
+        while(prev != NULL){
+          //kprintf("Add %d %d",pte->vaddr,vaddr_to_free);
+            if(prev->next == pte){
+              //kprintf("Add %d %d",pte->vaddr,vaddr_to_free);
+              prev->next = prev->next->next;
+              kfree(pte);
+              break;
+            }
+
+            prev = prev->next;
+        }
+
+        struct page_table *pte2 = curproc->p_addrspace->first_page;
+        kprintf("\nAmount is %d\n",(int)amount);
+        while(pte2!= NULL){
+          kprintf("Post %d\n",pte2->vaddr);
+          pte2=pte2->next;
+        }
+
+        int spl = 0;
+
+        spl = splhigh();
+
+        // int index = tlb_probe(pte->vaddr, pte->paddr);
+        // tlb_write(TLBHI_INVALID(index), TLBLO_INVALID(), index);
+        //
+        for (i=0; i<NUM_TLB; i++) {
+      		tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
+      	}
+
+        splx(spl);
     }
-    curproc->p_addrspace->heap_bottom = curproc->p_addrspace->heap_bottom + amount;
     //kprintf("Final value : %d",curproc->p_addrspace->heap_bottom);
-    *retval = returnval;
-    return 0;
   }
 
   curproc->p_addrspace->heap_bottom = curproc->p_addrspace->heap_bottom + amount;
