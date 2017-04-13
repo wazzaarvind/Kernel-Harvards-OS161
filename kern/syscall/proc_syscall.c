@@ -434,10 +434,9 @@ int sys_sbrk(intptr_t amount, int *retval)
     return ENOMEM;
   if(amount+ as->heap_bottom < as->heap_bottom)
   {
-    int i
     vaddr_to_free = (as->heap_bottom + amount)&PAGE_FRAME;
     int npages = (amount/4096)*-1;
-    for(i=0;i<npages;i++)
+    for(int i=0;i<npages;i++)
       free_upage(KVADDR_TO_PADDR(vaddr_to_free));
     curproc->p_addrspace->heap_bottom = curproc->p_addrspace->heap_bottom + amount;
     return 0;

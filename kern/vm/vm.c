@@ -310,6 +310,10 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
       // So create one
       struct page_table *cur_page = kmalloc(sizeof(struct page_table));
 
+      if(cur_page == NULL){
+  			return ENOMEM;
+  		}
+
       cur_page->vaddr = faultaddress;
       cur_page->paddr = alloc_upages(); //page aligned address?
       cur_page->next = NULL;

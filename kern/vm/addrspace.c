@@ -84,7 +84,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 
 	newas = as_create();
 
-	if (newas==NULL) {
+	if (newas == NULL) {
 		return ENOMEM;
 	}
 
@@ -108,6 +108,9 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	// Copying segments one by one.
 	while(oldPtr != NULL){
 		newPtr = kmalloc(sizeof(struct segment));
+		if(newPtr == NULL){
+			return ENOMEM;
+		}
 		newPtr->start = oldPtr->start;
 		newPtr->end = oldPtr->end;
 		newPtr->npages = oldPtr->npages;
@@ -135,6 +138,9 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 
 	while(oldPte != NULL){
 		newPte = kmalloc(sizeof(struct page_table));
+		if(newPte == NULL){
+			return ENOMEM;
+		}
 		newPte->paddr = alloc_upages();
 		newPte->vaddr = oldPte->vaddr;
 		newPte->mem_or_disk = oldPte->mem_or_disk;
@@ -273,6 +279,10 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 	vaddr_t last_vaddr = vaddr + (npages * PAGE_SIZE);
 
 	struct segment *curseg = kmalloc(sizeof(struct segment));
+
+	if(curseg == NULL){
+		return ENOMEM;
+	}
 
 	curseg->start = vaddr;
 	curseg->end = last_vaddr;
