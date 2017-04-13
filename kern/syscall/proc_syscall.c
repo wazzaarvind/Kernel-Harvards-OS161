@@ -422,6 +422,8 @@ int sys_sbrk(intptr_t amount, int *retval)
     return EINVAL;
   vaddr_t vaddr_to_free;
 
+  //Top is start and bottom is end
+
   kprintf("Initial value : %d",curproc->p_addrspace->heap_bottom);
 
   int returnval = curproc->p_addrspace->heap_bottom;
@@ -432,17 +434,15 @@ int sys_sbrk(intptr_t amount, int *retval)
     return ENOMEM;
   if(amount+ as->heap_bottom < as->heap_bottom)
   {
-    //as->heap_end = amount+ as->heap_end;
-    //need to deallocate?
+    int i
     vaddr_to_free = (as->heap_bottom + amount)&PAGE_FRAME;
     int npages = (amount/4096)*-1;
-    for(int i=0;i<npages;i++)
+    for(i=0;i<npages;i++)
       free_upage(KVADDR_TO_PADDR(vaddr_to_free));
     curproc->p_addrspace->heap_bottom = curproc->p_addrspace->heap_bottom + amount;
     return 0;
   }
-  //amount=ROUNDUP(amount,4);
-  //kprintf("Amount: %d",(int)amount);
+
   curproc->p_addrspace->heap_bottom = curproc->p_addrspace->heap_bottom + amount;
   kprintf("Final value : %d",curproc->p_addrspace->heap_bottom);
   *retval = returnval;
