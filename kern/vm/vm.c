@@ -418,6 +418,8 @@ vaddr_t alloc_upages(void){
 
   spinlock_release(&vmlock);
 
+  bzero((void *)(PADDR_TO_KVADDR(startAlloc * PAGE_SIZE)), PAGE_SIZE);
+
   return startAlloc * PAGE_SIZE;
 
   //return paddr;
