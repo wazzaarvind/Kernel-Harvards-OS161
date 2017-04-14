@@ -440,34 +440,21 @@ vaddr_t alloc_upages(void){
 void free_upage(paddr_t addr)
 {
   int i = 0;
-  int pagesToInvalidate = 0;
-  vaddr_t iter_addr;
 
   spinlock_acquire(&vmlock);
 
-  for(i = 0; i < (int) tpages; i++){
-    iter_addr = i * PAGE_SIZE;
-    if(iter_addr == addr){
-      break;
-    }
-  }
+  i = addr/PAGE_SIZE;
 
-  // Sanity checks :
-  if(coremap[i].available == 1 || coremap[i].chunk_size == 0){
-    spinlock_release(&vmlock);
-    return;
-  }
+  // // Sanity checks :
+  KASSERT(coremap[i].available != 1);
+  //   spinlock_release(&vmlock);
+  //   return;
+  // }
 
-  pagesToInvalidate = coremap[i].chunk_size;
 
-  numBytes -= pagesToInvalidate * PAGE_SIZE;
-
-  while (pagesToInvalidate > 0) {
-    coremap[i].available = 1;
-    coremap[i].chunk_size = 0;
-    i++;
-    pagesToInvalidate--;
-  }
+  numBytes -= PAGE_SIZE;
+  coremap[i].available = 1;
+  coremap[i].chunk_size = 0;
 
   spinlock_release(&vmlock);
 

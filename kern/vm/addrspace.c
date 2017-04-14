@@ -72,7 +72,7 @@ as_create(void)
 	as->heap_bottom = 0;
 
 	as->stack_bottom = USERSTACK;
-	as->stack_top = USERSTACK - (50 * PAGE_SIZE);
+	as->stack_top = USERSTACK - (1024 * PAGE_SIZE);
 
 	return as;
 }
@@ -146,6 +146,8 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		newPte->mem_or_disk = oldPte->mem_or_disk;
 		newPte->next = NULL;
 
+		memmove((void *)PADDR_TO_KVADDR(newPte->paddr),(const void *)PADDR_TO_KVADDR(oldPte->paddr),PAGE_SIZE);
+
 		if(newas->last_page == NULL){
 			newas->last_page = newPte;
 			newas->first_page = newPte;
@@ -153,10 +155,6 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 			newas->last_page->next = newPte;
 			newas->last_page = newas->last_page->next;
 		}
-
-		// Now copy over the contents of the memory
-		memmove((void *)PADDR_TO_KVADDR(newPte->paddr),(const void *)PADDR_TO_KVADDR(oldPte->paddr),PAGE_SIZE);
-
 		oldPte = oldPte->next;
 	}
 
