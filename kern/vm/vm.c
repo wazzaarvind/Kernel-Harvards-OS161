@@ -13,6 +13,7 @@
 
 
 paddr_t size;
+struct spinlock s_lock=SPINLOCK_INITIALIZER;
 
 int tpages = 0;
 
@@ -233,6 +234,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
     //   segCount++;
     //   tempIter = tempIter->next;
     // }
+    faultaddress &= PAGE_FRAME;
 
     while(curseg != NULL){
          if(faultaddress >= curseg->start && faultaddress < curseg->end){
@@ -259,7 +261,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
       return EFAULT;
     }
 
-    faultaddress &= PAGE_FRAME;
+    
 
 
     // If it is, then find the corresponding PTE.
@@ -445,6 +447,18 @@ void free_upage(paddr_t addr)
 
   i = addr/PAGE_SIZE;
 
+  /*struct page_table *cur_last_page = curproc->p_addrspace->last_page;
+  struct page_table *cur_first_page = curproc->p_addrspace->first_page;
+  while(cur_first_page->next!=cur_last_page)
+  {
+    cur_first_page = cur_first_page->next;
+  }
+  kfree(cur_last_page);
+  curproc->p_addrspace->last_page = cur_first_page;
+  curproc->p_addrspace->last_page->next = NULL;*/
+
+  //cur_first_page = cur_first_page->next;
+  
   // // Sanity checks :
   KASSERT(coremap[i].available != 1);
   //   spinlock_release(&vmlock);

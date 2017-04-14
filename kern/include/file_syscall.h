@@ -8,4 +8,3 @@ int sys_dup2(int fd_old, int fd_new, int *retval);
 int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos);
 //int sys_chdir(const char *path_name);
 //int sys__getcwd(char *buf, size_t buflen,int *retval);
-int sys_sbrk(intptr_t amount, int *retval);
