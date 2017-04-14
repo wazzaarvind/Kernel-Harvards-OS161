@@ -431,7 +431,7 @@ int sys_sbrk(intptr_t amount, int *retval)
 
   vaddr_t vaddr;
 
-  int ret = as->heap_bottom;
+  vaddr_t ret = as->heap_bottom;
 
   // struct page_table *pte1 = as->first_page;
   // kprintf("\nAmount is %d\n",(int)amount);

@@ -180,16 +180,18 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
     int spl = 0;
     uint32_t ehi,elo;
 
-    switch (faulttype) {
-	    case VM_FAULT_READONLY:
-		/* We always create pages read-write, so we can't get this */
-		panic("dumbvm: got VM_FAULT_READONLY\n");
-	    case VM_FAULT_READ:
-	    case VM_FAULT_WRITE:
-		break;
-	    default:
-		return EINVAL;
-	 }
+    (void) faulttype;
+
+  //   switch (faulttype) {
+	//     case VM_FAULT_READONLY:
+	// 	/* We always create pages read-write, so we can't get this */
+	// 	panic("dumbvm: got VM_FAULT_READONLY\n");
+	//     case VM_FAULT_READ:
+	//     case VM_FAULT_WRITE:
+	// 	break;
+	//     default:
+	// 	return EINVAL;
+	//  }
 
     if (curproc == NULL) {
       /*
@@ -322,6 +324,11 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
 
       cur_page->vaddr = faultaddress;
       cur_page->paddr = alloc_upages(); //page aligned address?
+
+      if(cur_page->paddr == 0){
+          return ENOMEM;
+      }
+
       cur_page->next = NULL;
       //kprintf("\nNew PTE is %d",cur_page->vaddr);
 

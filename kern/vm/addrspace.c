@@ -142,6 +142,9 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 			return ENOMEM;
 		}
 		newPte->paddr = alloc_upages();
+		if(newPte->paddr == 0){
+				return ENOMEM;
+		}
 		newPte->vaddr = oldPte->vaddr;
 		newPte->mem_or_disk = oldPte->mem_or_disk;
 		newPte->next = NULL;
