@@ -459,6 +459,7 @@ int sys_sbrk(intptr_t amount, int *retval)
       for(int i=0;i<npages;i++){
 
         vaddr = (as->heap_bottom - PAGE_SIZE)&PAGE_FRAME;
+        //kprintf("\nVaddr to find : %d\n",vaddr);
         as->heap_bottom = as->heap_bottom - PAGE_SIZE;
 
         struct page_table *pte = as->first_page;
@@ -467,19 +468,25 @@ int sys_sbrk(intptr_t amount, int *retval)
         int j = 0;
         while(pte!= NULL){
 
-            //kprintf("inter :%d", j);
+            //kprintf("PTE :%d %d\n", j, pte->vaddr);
             if(pte->vaddr == vaddr){
                 prev->next = pte->next;
-                free_upage(pte->paddr);
-                kfree(pte);
-
                 spl = splhigh();
-                int index = tlb_probe(vaddr, 0);
+                int index = tlb_probe(pte->vaddr, 0);
+                //kprintf("\nIndex : %d\n",index);
                 if(index > 0)
                 {
+                    //kprintf("\nHi\n");
                     tlb_write(TLBHI_INVALID(index), TLBLO_INVALID(), index);
                 }
                 splx(spl);
+                free_upage(pte->paddr);
+                if(pte->next==NULL)
+                 {
+                    curproc->p_addrspace->last_page = prev;
+                    curproc->p_addrspace->last_page->next = NULL;
+                  }
+                kfree(pte);
                 break;
             }
             j++;

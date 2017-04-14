@@ -71,8 +71,8 @@ as_create(void)
 	as->heap_top = 0;
 	as->heap_bottom = 0;
 
-	as->stack_bottom = USERSTACK;
-	as->stack_top = USERSTACK - (1024 * PAGE_SIZE);
+	// as->stack_bottom = USERSTACK;
+	// as->stack_top = USERSTACK - (1024 * PAGE_SIZE);
 
 	return as;
 }
@@ -84,11 +84,14 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 
 	newas = as_create();
 
-	if (newas == NULL) {
+	if (newas==NULL) {
 		return ENOMEM;
 	}
 
 	// check if old is null.
+	if(old == NULL){
+		return ENOMEM;
+	}
 
 
 	newas->heap_top = old->heap_top;
@@ -103,14 +106,11 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 
 	//Have to copy all segments and pages
 	struct segment *oldPtr = old->sgmt;
-	struct segment *newPtr;
+	struct segment *newPtr = NULL;
 
 	// Copying segments one by one.
 	while(oldPtr != NULL){
 		newPtr = kmalloc(sizeof(struct segment));
-		if(newPtr == NULL){
-			return ENOMEM;
-		}
 		newPtr->start = oldPtr->start;
 		newPtr->end = oldPtr->end;
 		newPtr->npages = oldPtr->npages;
@@ -118,6 +118,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 
 		if(newas->sgmt == NULL){
 			newas->sgmt = newPtr;
+
 		} else {
 
 			struct segment *temp = newas->sgmt;
@@ -134,22 +135,20 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 
 	// Next copying the PTE and the pages!
 	struct page_table *oldPte = old->first_page;
-	struct page_table *newPte;
+	struct page_table *newPte = NULL;
 
 	while(oldPte != NULL){
 		newPte = kmalloc(sizeof(struct page_table));
-		if(newPte == NULL){
-			return ENOMEM;
-		}
 		newPte->paddr = alloc_upages();
 		if(newPte->paddr == 0){
 				return ENOMEM;
 		}
+
 		newPte->vaddr = oldPte->vaddr;
 		newPte->mem_or_disk = oldPte->mem_or_disk;
 		newPte->next = NULL;
 
-		memmove((void *)PADDR_TO_KVADDR(newPte->paddr),(const void *)PADDR_TO_KVADDR(oldPte->paddr),PAGE_SIZE);
+		memmove((void *)(MIPS_KSEG0+newPte->paddr),(const void *)(MIPS_KSEG0+oldPte->paddr),PAGE_SIZE);
 
 		if(newas->last_page == NULL){
 			newas->last_page = newPte;
@@ -158,6 +157,10 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 			newas->last_page->next = newPte;
 			newas->last_page = newas->last_page->next;
 		}
+
+		// Now copy over the contents of the memory
+
+
 		oldPte = oldPte->next;
 	}
 
@@ -281,10 +284,6 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
 
 	struct segment *curseg = kmalloc(sizeof(struct segment));
 
-	if(curseg == NULL){
-		return ENOMEM;
-	}
-
 	curseg->start = vaddr;
 	curseg->end = last_vaddr;
 	curseg->npages = npages;
@@ -346,7 +345,8 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr)
 	 * Write this.
 	 */
 
-	(void)as;
+	as->stack_bottom = USERSTACK;
+	as->stack_top = USERSTACK - (1024 * PAGE_SIZE);
 
 	/* Initial user-level stack pointer */
 	*stackptr = USERSTACK;
