@@ -13,7 +13,7 @@
 
 
 paddr_t size;
-struct spinlock s_lock=SPINLOCK_INITIALIZER;
+//struct spinlock s_lock=SPINLOCK_INITIALIZER;
 
 int tpages = 0;
 
@@ -67,6 +67,8 @@ void vm_initialise() {
 
 vaddr_t alloc_kpages(unsigned npages)
 {
+  spinlock_acquire(&vmlock);
+
 
   int alloc = 0;
   int req = (int) npages;
@@ -75,7 +77,6 @@ vaddr_t alloc_kpages(unsigned npages)
   //int startPage = 0;
   int i = 0, startAlloc = 0;
 
-  spinlock_acquire(&vmlock);
 
   for(i = 0; i < (int) tpages; i++){
     if(coremap[i].available == 1){
@@ -135,11 +136,12 @@ vaddr_t alloc_kpages(unsigned npages)
 
 void free_kpages(vaddr_t addr)
 {
+  spinlock_acquire(&vmlock);
+
   int i = 0;
   int pagesToInvalidate = 0;
   vaddr_t iter_addr;
 
-  spinlock_acquire(&vmlock);
 
   for(i = 0; i < (int) tpages; i++){
     iter_addr = PADDR_TO_KVADDR(i * PAGE_SIZE);
@@ -441,6 +443,7 @@ vaddr_t alloc_upages(void){
   }
   //kprintf("\nMagic in VM: %d\n",numBytes);
   bzero((void *)(PADDR_TO_KVADDR(startAlloc * PAGE_SIZE)), PAGE_SIZE);
+
 
   spinlock_release(&vmlock);
 
