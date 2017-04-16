@@ -85,7 +85,6 @@ int sys_read(int fd, void *buf, size_t buflen, ssize_t *retval){
   struct uio uioRead;
   struct iovec iov;
 
-
   lock_acquire(curproc->filetable[fd]->lock);
 
   iov.iov_ubase = (userptr_t) buf;

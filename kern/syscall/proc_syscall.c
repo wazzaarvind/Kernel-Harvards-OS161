@@ -455,7 +455,7 @@ int sys_sbrk(intptr_t amount, int *retval)
 
     if((int)(amount*-1)==1073741824)
       return EINVAL;
-    
+
     else {
 
       // Taking away pages :

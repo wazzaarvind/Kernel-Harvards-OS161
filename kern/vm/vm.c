@@ -419,16 +419,21 @@ vaddr_t alloc_upages(void){
     }
   }
 
-  if(i == (int)(tpages)){
-    if(req > 1){
-      spinlock_release(&vmlock);
-      return (vaddr_t)NULL;
-    }
-    if(coremap[i].available == 0){
-      spinlock_release(&vmlock);
-      return (vaddr_t)NULL;
-    }
+  if(alloc != req){
+    spinlock_release(&vmlock);
+    return (vaddr_t) NULL;
   }
+
+  // if(i == (int)(tpages)){
+  //   if(req > 1){
+  //     spinlock_release(&vmlock);
+  //     return (vaddr_t)NULL;
+  //   }
+  //   if(coremap[i].available == 0){
+  //     spinlock_release(&vmlock);
+  //     return (vaddr_t)NULL;
+  //   }
+  // }
 
   startAlloc = i;
   //kprintf("\nAlloc: %d\n",alloc);
