@@ -149,9 +149,9 @@ fork_proc_create(const char *name)
 	 for(int i = 0; i < 100; i++){
 			 		// Acquire lock before handling the file table.
 					if(curproc->filetable[i] != NULL){
-						lock_acquire(curproc->filetable[i]->lock);
+						//lock_acquire(curproc->filetable[i]->lock);
 						curproc->filetable[i]->counter += 1;
-						lock_release(curproc->filetable[i]->lock);
+						//lock_release(curproc->filetable[i]->lock);
 						newProc->filetable[i] = curproc->filetable[i];
 					}
 
@@ -248,9 +248,9 @@ proc_destroy(struct proc *proc)
 		{
 			//kprintf("\ncounter : %d %d\n", curproc->filetable[0]->counter, i);
 
-			lock_acquire(proc->filetable[i]->lock);
+			//lock_acquire(proc->filetable[i]->lock);
 			proc->filetable[i]->counter--;
-			lock_release(proc->filetable[i]->lock);
+			//lock_release(proc->filetable[i]->lock);
 
 			if(proc->filetable[i]->counter==0)
 			{	if(i == 0){
@@ -259,7 +259,7 @@ proc_destroy(struct proc *proc)
 				vfs_close(proc->filetable[i]->file);
 				lock_destroy(proc->filetable[i]->lock);
 				kfree(proc->filetable[i]);
-				proc->filetable[i]=NULL;
+				//proc->filetable[i]=NULL;
 			}
 			proc->filetable[i]=NULL;
 		}

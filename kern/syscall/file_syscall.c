@@ -29,8 +29,11 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
   if(buf==NULL||buf>=(void *)0x80000000||buf==(void *)0x40000000)
   		return EFAULT;
 
+  	lock_acquire(curproc->filetable[fd]->lock);
+
   if((curproc->filetable[fd]->flags & O_ACCMODE)==O_RDONLY) {
      	*retval=-1;
+     	lock_release(curproc->filetable[fd]->lock);
      	return EBADF;
   }
   /*Achuth edits : Fetching the stdout file handle and writing to the file.*/
@@ -38,7 +41,7 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
   struct uio uioWrite;
   struct iovec iov;
 
-  lock_acquire(curproc->filetable[fd]->lock);
+  
   iov.iov_ubase = (userptr_t)buf;
   iov.iov_len = size;
 
@@ -67,7 +70,7 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
 
 int sys_read(int fd, void *buf, size_t buflen, ssize_t *retval){
 
-
+	//kprintf("\nReading %d\n",fd);
 	if(fd<0||fd>=OPEN_MAX)
         	return EBADF;
 
@@ -76,16 +79,18 @@ int sys_read(int fd, void *buf, size_t buflen, ssize_t *retval){
 
   if(buf==NULL||buf>=(void *)0x80000000||buf==(void *)0x40000000)
   		return EFAULT;
+  lock_acquire(curproc->filetable[fd]->lock);
 
   if((curproc->filetable[fd]->flags & O_ACCMODE)==O_WRONLY) {
      	*retval=-1;
+     	lock_release(curproc->filetable[fd]->lock);
      	return EBADF;
   }
 
   struct uio uioRead;
   struct iovec iov;
 
-  lock_acquire(curproc->filetable[fd]->lock);
+  //lock_acquire(curproc->filetable[fd]->lock);
 
   iov.iov_ubase = (userptr_t) buf;
   iov.iov_len = buflen;
@@ -123,7 +128,7 @@ int sys_open(char *path_file, int flags, mode_t mode, int *retval){
   }
 
 	if(file_index>64){
-		return EINVAL;
+		return EMFILE;
   }
 
   //struct vnode *open_vn;//;= kmalloc(sizeof(open_vn));
@@ -133,6 +138,7 @@ int sys_open(char *path_file, int flags, mode_t mode, int *retval){
   int errorCpy = copyinstr((const_userptr_t)path_file, buf, 128, &kernCopy);
 
   if (errorCpy != 0) {
+  	*retval=-1;
     return EFAULT;
   }
 
@@ -143,6 +149,7 @@ int sys_open(char *path_file, int flags, mode_t mode, int *retval){
 	if(check!=0)
 	{
 		kfree(curproc->filetable[file_index]);
+		curproc->filetable[file_index]=NULL;
     //kfree(curproc->filetable[file_index]->file);
 		//vfs_close(curproc->filetable[file_index]->file);
 		return check;
@@ -155,6 +162,8 @@ int sys_open(char *path_file, int flags, mode_t mode, int *retval){
 
 	curproc->filetable[file_index]->counter=1;
 	curproc->filetable[file_index]->lock=lock_create(path_file);
+	if(curproc->filetable[file_index]->lock == NULL)
+		return ENOMEM;
 	//curproc->filetable[file_index]->file=open_vn;
 
 
@@ -173,17 +182,23 @@ int sys_close(int fd){
   if(curproc->filetable[fd]==NULL)
  	        return EBADF;
 
+ 	if(fd!=0)
+ 	{
   	//kprintf("Decrementing counter");
   if(curproc->filetable[fd]->counter!=0){
 	     curproc->filetable[fd]->counter--;
   }
+  kprintf("\nCounter is %d\n",curproc->filetable[fd]->counter);
 	if(curproc->filetable[fd]->counter == 0)
 	{
+
+	vfs_close(curproc->filetable[fd]->file);
 	 lock_destroy(curproc->filetable[fd]->lock);
-	 vfs_close(curproc->filetable[fd]->file);
+	 
    kfree(curproc->filetable[fd]);
    curproc->filetable[fd]=NULL;
 	}
+}
 	return 0;
 }
 
@@ -216,18 +231,22 @@ int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos){
   if(fd<0||fd>=OPEN_MAX||curproc->filetable[fd]==NULL)
 		return EBADF;
 
+	lock_acquire(curproc->filetable[fd]->lock);
 
 	int check=VOP_ISSEEKABLE(curproc->filetable[fd]->file);
 
 	if(check==0)
 		{
+			lock_release(curproc->filetable[fd]->lock);
 			return ESPIPE;
 		}
+
 
 	if(whence==SEEK_SET)
 	{	curproc->filetable[fd]->offset=pos; //might need to change type of offset in proc.h to off_t
 		if(curproc->filetable[fd]->offset<0)
 			{
+				lock_release(curproc->filetable[fd]->lock);
 				return EINVAL;
 			}
 	}
@@ -238,6 +257,7 @@ int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos){
 		curproc->filetable[fd]->offset+=pos;
 		if(curproc->filetable[fd]->offset<0)
 		{
+			lock_release(curproc->filetable[fd]->lock);
 			return EINVAL;
 		}
 	}
@@ -246,22 +266,27 @@ int sys_lseek(int fd, off_t pos, int whence, off_t *new_pos){
 		int check1=VOP_STAT(curproc->filetable[fd]->file, &stats_file);
 		if(check1==0)
 		{
+			lock_release(curproc->filetable[fd]->lock);
 			curproc->filetable[fd]->offset=pos+stats_file.st_size;
 		}
 		else
 		{
+			lock_release(curproc->filetable[fd]->lock);
 			return check1;
 		}
 		if(curproc->filetable[fd]->offset<0)
 		{
+			lock_release(curproc->filetable[fd]->lock);
 			return EINVAL;
 		}
 	}
 	else
 	{
+		lock_release(curproc->filetable[fd]->lock);
 		return EINVAL;
 	}
 	*new_pos=curproc->filetable[fd]->offset;
+	lock_release(curproc->filetable[fd]->lock);
 
 	return 0;
 
