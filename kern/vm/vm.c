@@ -98,16 +98,21 @@ vaddr_t alloc_kpages(unsigned npages)
     }
   }
 
-  if(i == (int)(tpages)){
-    if(req > 1){
-      spinlock_release(&vmlock);
-      return (vaddr_t)NULL;
-    }
-    if(coremap[i].available == 0){
-      spinlock_release(&vmlock);
-      return (vaddr_t)NULL;
-    }
+  if(alloc != req){
+    spinlock_release(&vmlock);
+    return (vaddr_t) NULL;
   }
+
+  // if(i == (int)(tpages)){
+  //   if(req > 1){
+  //     spinlock_release(&vmlock);
+  //     return (vaddr_t)NULL;
+  //   }
+  //   if(coremap[i].available == 0){
+  //     spinlock_release(&vmlock);
+  //     return (vaddr_t)NULL;
+  //   }
+  // }
 
   startAlloc = i;
   //kprintf("\nAlloc: %d\n",alloc);
@@ -263,7 +268,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
       return EFAULT;
     }
 
-    
+
 
 
     // If it is, then find the corresponding PTE.
@@ -435,10 +440,9 @@ vaddr_t alloc_upages(void){
     i++;
   }
   //kprintf("\nMagic in VM: %d\n",numBytes);
+  bzero((void *)(PADDR_TO_KVADDR(startAlloc * PAGE_SIZE)), PAGE_SIZE);
 
   spinlock_release(&vmlock);
-
-  bzero((void *)(PADDR_TO_KVADDR(startAlloc * PAGE_SIZE)), PAGE_SIZE);
 
   return startAlloc * PAGE_SIZE;
 
@@ -465,7 +469,7 @@ void free_upage(paddr_t addr)
   curproc->p_addrspace->last_page->next = NULL;*/
 
   //cur_first_page = cur_first_page->next;
-  
+
   // // Sanity checks :
   KASSERT(coremap[i].available != 1);
   //   spinlock_release(&vmlock);
