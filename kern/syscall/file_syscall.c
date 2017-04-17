@@ -41,7 +41,7 @@ int sys_write(int fd, const void *buf,size_t size, ssize_t *retval){
   struct uio uioWrite;
   struct iovec iov;
 
-  
+
   iov.iov_ubase = (userptr_t)buf;
   iov.iov_len = size;
 
@@ -91,7 +91,7 @@ int sys_read(int fd, void *buf, size_t buflen, ssize_t *retval){
   struct iovec iov;
 
   //lock_acquire(curproc->filetable[fd]->lock);
-
+  
   iov.iov_ubase = (userptr_t) buf;
   iov.iov_len = buflen;
   uioRead.uio_iov = &iov;
@@ -194,7 +194,6 @@ int sys_close(int fd){
 
 	vfs_close(curproc->filetable[fd]->file);
 	 lock_destroy(curproc->filetable[fd]->lock);
-	 
    kfree(curproc->filetable[fd]);
    curproc->filetable[fd]=NULL;
 	}
