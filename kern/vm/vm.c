@@ -11,15 +11,36 @@
 #include <vm.h>
 #include <addrspace.h>
 #include <bitmap.h>
+#include <kern/iovec.h>
+#include <uio.h>
+#include <vfs.h>
+#include <kern/fcntl.h>
+#include <kern/stat.h>
 
 
 paddr_t size;
 //struct spinlock s_lock=SPINLOCK_INITIALIZER;
-struct vnode *swap_vnode;
-int clock = 0;
+//struct vnode *swap_vnode;
+//int clock = 0;
+unsigned int lfsr = 0xACE1u;
+unsigned int bit,t=0;
 int tpages = 0;
 
 int numBytes;
+
+unsigned int rand(unsigned int startNumber,unsigned int endNumber)
+{
+    if(startNumber == endNumber) return startNumber;
+    int *p = NULL;
+    t = t^(int)p;
+    bit  = ((lfsr >> 0) ^ (lfsr >> 2) ^ (lfsr >> 3) ^ (lfsr >> 5) ) & 1;
+    lfsr = ((bit<<15) | (lfsr>>1) | t)%endNumber;
+    while(lfsr<startNumber){
+        lfsr = lfsr + endNumber - startNumber;
+    }
+    return lfsr;
+}
+
 
 void vm_initialise() {
 
@@ -66,19 +87,19 @@ void vm_initialise() {
   }
 
   numBytes += pages_Kused * PAGE_SIZE;
-  int check = 0;
-  check = vfs_open("lhd0raw:",O_RDWR,0,&swap_vnode);
 
-  // Swap init.
-  struct stat stats_file;
-  int check1 = VOP_STAT(swap_vnode, &stats_file);
-  int swapDiskSize = stats_file.st_size;
-  int swapPages = swapDiskSize/PAGE_SIZE;
+  //
+  // // Swap init.
+  // struct stat stats_file;
+  // VOP_STAT(swap_vnode, &stats_file);
+  //int swapDiskSize = stats_file.st_size;
+  //int swapPages = swapDiskSize/PAGE_SIZE;
 
-  struct bitmap *swapTable = bitmap_create(swapPages);
+  //struct bitmap *swapTable = bitmap_create(swapPages);
 
-  if(check1)
-    return;
+
+  // if(check1)
+  //   return;
 
 
   //kprintf("Num bytes : %d \n", numBytes);
@@ -271,6 +292,58 @@ unsigned int coremap_used_bytes(void)
 
 void vm_bootstrap(void)
 {
+  kprintf("%d\n", (int)rand(1,100));
+  kprintf("%d\n", (int)rand(1,100));
+  kprintf("%d\n", (int)rand(1,100));
+  kprintf("%d\n", (int)rand(1,100));
+  kprintf("%d\n", (int)rand(1,100));
+
+
+  struct vnode *swap_vnode;
+
+  vfs_open((char *)"lhd0raw:",O_RDWR,0,&swap_vnode);
+
+  struct uio uioWrite;
+  struct iovec iov;
+
+  const char *name = (char *)alloc_kpages(1);
+  name = "Test";
+  iov.iov_kbase = (void *)name;
+  iov.iov_len = PAGE_SIZE;
+
+  uioWrite.uio_iov = &iov;
+  uioWrite.uio_iovcnt = 1;
+  uioWrite.uio_offset = 0;
+  uioWrite.uio_resid = PAGE_SIZE;
+  uioWrite.uio_segflg = UIO_SYSSPACE;
+  uioWrite.uio_rw = UIO_WRITE;
+  uioWrite.uio_space = NULL;
+
+  VOP_WRITE(swap_vnode, &uioWrite);
+
+  const char *name1 = (char *)alloc_kpages(1);
+
+  struct uio uioRead;
+  struct iovec iovRead;
+
+  //lock_acquire(curproc->filetable[fd]->lock);
+  iovRead.iov_kbase =(void *) name1;
+  iovRead.iov_len = PAGE_SIZE;
+
+  uioRead.uio_iov = &iovRead;
+	uioRead.uio_iovcnt = 1;
+	uioRead.uio_offset = 0; //not sure
+	uioRead.uio_resid = PAGE_SIZE;
+	uioRead.uio_segflg = UIO_SYSSPACE;
+	uioRead.uio_rw = UIO_READ;
+	uioRead.uio_space = NULL;
+
+  KASSERT(swap_vnode != NULL);
+
+	VOP_READ(swap_vnode, &uioRead);
+
+  kprintf("DATA  : %s \n", name1);
+
 	// Do nothing.
 }
 

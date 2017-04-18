@@ -80,6 +80,9 @@ int vm_fault(int faulttype, vaddr_t faultaddress);
 
 void free_upage(vaddr_t addr);
 
+unsigned int rand(unsigned int startNumber,unsigned int endNumber);
+
+
 
 /* Allocate/free kernel heap pages (called by kmalloc/kfree) */
 vaddr_t alloc_kpages(unsigned npages);
