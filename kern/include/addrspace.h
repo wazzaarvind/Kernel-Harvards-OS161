@@ -45,6 +45,7 @@ struct page_table {
   paddr_t paddr;
   vaddr_t vaddr;
   int mem_or_disk; //mem=1,disk=2
+  int bitmapIndex;
   struct page_table *next;
 };
 

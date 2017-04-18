@@ -29,9 +29,12 @@
 
 #ifndef _VM_H_
 #define _VM_H_
-
+#define FIXED 1
+#define RECENTLY_USED 3
+#define NOT_RECENTLY_USED 4
+#define FREE 2
 #include <synch.h> // fix import
-
+#include <addrspace.h>
 
 /*
  * VM system-related definitions.
@@ -42,11 +45,13 @@ struct coremap_struct
 {
 	//int owner;
 	int chunk_size;
-	//int state;
+	int state;
 	int available;
+	struct page_table *first;
 	//paddr_t start;
 
 };
+
 
 struct coremap_struct *coremap;
 struct spinlock vmlock;

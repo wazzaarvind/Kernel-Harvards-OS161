@@ -10,11 +10,13 @@
 #include <mips/tlb.h>
 #include <vm.h>
 #include <addrspace.h>
+#include <bitmap.h>
 
 
 paddr_t size;
 //struct spinlock s_lock=SPINLOCK_INITIALIZER;
-
+struct vnode *swap_vnode;
+int clock = 0;
 int tpages = 0;
 
 int numBytes;
@@ -53,17 +55,104 @@ void vm_initialise() {
   for(int i = 0; i < pages_Kused; i++){
     coremap[i].available = 0;
     coremap[i].chunk_size = 0;
+    coremap[i].state = FIXED;
   }
 
   // Make the rest available :
   for(int j = pages_Kused; j < tpages; j++){
     coremap[j].available = 1;
     coremap[j].chunk_size = 0;
+    coremap[j].state = FREE;
   }
 
   numBytes += pages_Kused * PAGE_SIZE;
+  int check = 0;
+  check = vfs_open("lhd0raw:",O_RDWR,0,&swap_vnode);
+
+  // Swap init.
+  struct stat stats_file;
+  int check1 = VOP_STAT(swap_vnode, &stats_file);
+  int swapDiskSize = stats_file.st_size;
+  int swapPages = swapDiskSize/PAGE_SIZE;
+
+  struct bitmap *swapTable = bitmap_create(swapPages);
+
+  if(check1)
+    return;
+
+
   //kprintf("Num bytes : %d \n", numBytes);
 }
+
+// vaddr_t alloc_kpages_noswap(unsigned npages)
+// {
+//   spinlock_acquire(&vmlock);
+//
+//
+//   int alloc = 0;
+//   int req = (int) npages;
+//   //kprintf("\ntpages: %d\n",tpages);
+//   //kprintf("\nReq: %d\n",req);
+//   //int startPage = 0;
+//   int i = 0, startAlloc = 0;
+//
+//
+//   for(i = 0; i < (int) tpages; i++){
+//     if(coremap[i].available == 1){
+//       for(int j = i;  j <  i + (int) npages; j++){
+//         if(coremap[j].available == 1){
+//           alloc +=1;
+//         } else {
+//           break;
+//         }
+//         if(alloc == req){
+//           break;
+//         }
+//       }
+//     }
+//
+//     if(alloc == req){
+//       break;
+//     } else {
+//       alloc = 0;
+//     }
+//   }
+//
+//   if(alloc != req){
+//     spinlock_release(&vmlock);
+//     return (vaddr_t) NULL;
+//   }
+//
+//   // if(i == (int)(tpages)){
+//   //   if(req > 1){
+//   //     spinlock_release(&vmlock);
+//   //     return (vaddr_t)NULL;
+//   //   }
+//   //   if(coremap[i].available == 0){
+//   //     spinlock_release(&vmlock);
+//   //     return (vaddr_t)NULL;
+//   //   }
+//   // }
+//
+//   startAlloc = i;
+//   //kprintf("\nAlloc: %d\n",alloc);
+//   numBytes += alloc * PAGE_SIZE;
+//
+//
+//   while(req > 0){
+//     req--;
+//     coremap[i].available = 0;
+//     coremap[i].chunk_size = (int) npages;
+//     i++;
+//   }
+//   //kprintf("\nMagic in VM: %d\n",numBytes);
+//
+//   spinlock_release(&vmlock);
+//
+//   return PADDR_TO_KVADDR(startAlloc * PAGE_SIZE);
+//
+// }
+
 
 vaddr_t alloc_kpages(unsigned npages)
 {
@@ -124,6 +213,7 @@ vaddr_t alloc_kpages(unsigned npages)
     req--;
     coremap[i].available = 0;
     coremap[i].chunk_size = (int) npages;
+    coremap[i].state = FIXED;
     i++;
   }
   //kprintf("\nMagic in VM: %d\n",numBytes);
@@ -133,6 +223,7 @@ vaddr_t alloc_kpages(unsigned npages)
   return PADDR_TO_KVADDR(startAlloc * PAGE_SIZE);
 
 }
+
 
 void free_kpages(vaddr_t addr)
 {
@@ -163,6 +254,7 @@ void free_kpages(vaddr_t addr)
   while (pagesToInvalidate > 0) {
     coremap[i].available = 1;
     coremap[i].chunk_size = 0;
+    coremap[1].state = FREE;
     i++;
     pagesToInvalidate--;
   }
@@ -269,9 +361,6 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
     if(segFlag != 1){
       return EFAULT;
     }
-
-
-
 
     // If it is, then find the corresponding PTE.
     struct page_table *first = curproc->p_addrspace->first_page;
@@ -444,6 +533,7 @@ vaddr_t alloc_upages(void){
     req--;
     coremap[i].available = 0;
     coremap[i].chunk_size = npages;
+    coremap[i].state = RECENTLY_USED;
     i++;
   }
   //kprintf("\nMagic in VM: %d\n",numBytes);
@@ -488,6 +578,7 @@ void free_upage(paddr_t addr)
   numBytes -= PAGE_SIZE;
   coremap[i].available = 1;
   coremap[i].chunk_size = 0;
+  coremap[i].state = FREE;
 
   spinlock_release(&vmlock);
 
