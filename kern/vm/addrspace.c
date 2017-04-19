@@ -197,7 +197,8 @@ as_destroy(struct addrspace *as)
 
 	 while(pagedes != NULL)
 	 {
-	 		free_upage(pagedes->paddr);
+	 		if(pagedes->paddr!=0)
+	 			free_upage(pagedes->paddr);
 			pagedes = pagedes->next;
 	 }
 

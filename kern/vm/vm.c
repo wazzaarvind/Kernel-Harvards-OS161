@@ -323,8 +323,8 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
             struct uio uioRead;
             struct iovec iovRead;
 
-            //iovRead.iov_kbase = (void *)PADDR_TO_KVADDR(first->paddr);
-            iovRead.iov_kbase = (void *)first->vaddr;
+            iovRead.iov_kbase = (void *)PADDR_TO_KVADDR(first->paddr);
+            //iovRead.iov_kbase = (void *)first->vaddr;
             iovRead.iov_len = PAGE_SIZE;
 
             uioRead.uio_iov = &iovRead;
@@ -389,6 +389,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
       //kprintf("\nNew PTE is %d",cur_page->vaddr);
 
       if(curproc->p_addrspace->last_page == NULL){
+
         coremap[index].first = cur_page;
         curproc->p_addrspace->last_page = cur_page;
         curproc->p_addrspace->first_page = cur_page;
@@ -466,17 +467,21 @@ vaddr_t alloc_upages(void){
       alloc = 0;
     }
   }
-
+  int flag = 0;
+  struct page_table *store; 
   if(alloc != req){
-    spinlock_release(&vmlock);
+    //spinlock_release(&vmlock);
     i = evict_page();
-    spinlock_acquire(&vmlock);
+    store = coremap[i].first;
+    flag = 1;
+    //spinlock_acquire(&vmlock);
     // spinlock_release(&vmlock);
     // return (vaddr_t) NULL;
   }
 
   startAlloc = i;
   numBytes += alloc * PAGE_SIZE;
+
 
 
   while(req > 0){
@@ -487,30 +492,12 @@ vaddr_t alloc_upages(void){
     coremap[i].first = curproc->p_addrspace->first_page;
     i++;
   }
-  bzero((void *)(PADDR_TO_KVADDR(startAlloc * PAGE_SIZE)), PAGE_SIZE);
+
   spinlock_release(&vmlock);
-  return startAlloc * PAGE_SIZE;
-}
 
-int evict_page(void){
-
-  //int found = 0;
-  int i = start;
-
-  while(i != (start-1)){
-
-    if(i == tpages-1){
-      i = 0;
-    }
-
-    if(coremap[i].state == RECENTLY_USED){ // Change for LRU.
-
-      //KASSERT(coremap[i].first != NULL);
-
-      struct page_table *temp = coremap[i].first; // First page of process owning this cormap page.
-      found = i;
-
-      // page align faultaddress and find coresponding page in the PTE.
+  if(flag == 1){
+    struct page_table *temp = store; // First page of process owning this cormap page.
+          // page align faultaddress and find coresponding page in the PTE.
       while(temp != NULL){
         if(temp->paddr == (unsigned int)(i * PAGE_SIZE))  //does this necessarily need to be the case? Will it never be in between?
         {
@@ -524,8 +511,7 @@ int evict_page(void){
           struct uio uioWrite;
           struct iovec iov;
 
-          //iov.iov_kbase = (void *)PADDR_TO_KVADDR(temp->paddr);
-          iov.iov_kbase = (void *)temp->vaddr;
+          iov.iov_kbase = (void *)PADDR_TO_KVADDR(temp->paddr);
           iov.iov_len = PAGE_SIZE;
 
           uioWrite.uio_iov = &iov;
@@ -535,9 +521,9 @@ int evict_page(void){
           uioWrite.uio_segflg = UIO_SYSSPACE;
           uioWrite.uio_rw = UIO_WRITE;
           uioWrite.uio_space = NULL;
-          kprintf("\nHi %d\n",temp->vaddr);
+          //kprintf("\nHi %d\n",temp->vaddr);
           int check2 = VOP_WRITE(swap_vnode, &uioWrite);
-          kprintf("\nHi\n");
+          //kprintf("\nHi\n");
           if(check2)
             kprintf("\nVOP_WRITE fail\n");
 
@@ -561,14 +547,35 @@ int evict_page(void){
         temp = temp->next;
       }
 
-      break;
+    flag = 0;
+  }
+  bzero((void *)(PADDR_TO_KVADDR(startAlloc * PAGE_SIZE)), PAGE_SIZE);
+  return startAlloc * PAGE_SIZE;
+}
+
+int evict_page(void){
+
+  //int found = 0;
+  int i = start;
+
+  while(i != (start-1)){
+
+    if(i == tpages-1){
+      i = 0;
     }
 
+    if(coremap[i].state == RECENTLY_USED){ // Change for LRU.
+
+      found = i;
+
+      break;
+    }
 
     i++;
   }
 
-  //start = found + 1;
+  start = found + 1;
+
   return found;
 }
 
