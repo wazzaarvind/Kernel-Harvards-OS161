@@ -29,10 +29,15 @@
 
 #ifndef _VM_H_
 #define _VM_H_
+
 #define FIXED 1
 #define RECENTLY_USED 3
 #define NOT_RECENTLY_USED 4
 #define FREE 2
+
+#define IN_MEMORY 1
+#define IN_DISK 2
+
 #include <synch.h> // fix import
 #include <addrspace.h>
 
@@ -99,6 +104,6 @@ unsigned int coremap_used_bytes(void);
 void vm_tlbshootdown(const struct tlbshootdown *);
 
 vaddr_t alloc_upages(void);
-
+int evict_page(void);
 
 #endif /* _VM_H_ */
