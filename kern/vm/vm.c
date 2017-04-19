@@ -182,7 +182,7 @@ void free_kpages(vaddr_t addr)
   while (pagesToInvalidate > 0) {
     coremap[i].available = 1;
     coremap[i].chunk_size = 0;
-    coremap[1].state = FREE;
+    coremap[i].state = FREE;
     i++;
     pagesToInvalidate--;
   }
@@ -601,7 +601,8 @@ void free_upage(paddr_t addr)
   //cur_first_page = cur_first_page->next;
 
   // // Sanity checks :
-  KASSERT(coremap[i].available != 1);
+  kprintf("I is %d\n",i);
+  //KASSERT(coremap[i].available != 1);
   //   spinlock_release(&vmlock);
   //   return;
   // }
