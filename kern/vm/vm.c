@@ -336,6 +336,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
           	uioRead.uio_space = NULL;
 
           	VOP_READ(swap_vnode, &uioRead);
+            first->mem_or_disk = IN_MEMORY;
 
         }
 
@@ -376,6 +377,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
 
       cur_page->vaddr = faultaddress;
       cur_page->paddr = alloc_upages(); //page aligned address?
+      cur_page->mem_or_disk = IN_MEMORY;
 
       int index = cur_page->paddr/PAGE_SIZE;
 
