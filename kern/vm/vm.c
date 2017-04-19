@@ -29,7 +29,6 @@ int tpages = 0;
 struct bitmap *swapTable = NULL;
 int start = 0;
 int numBytes;
-struct vnode *swap_vnode;
 
 unsigned int rand(unsigned int startNumber,unsigned int endNumber)
 {
@@ -199,19 +198,22 @@ unsigned int coremap_used_bytes(void)
 
 void vm_bootstrap(void)
 {
-  vfs_open((char *)"lhd0raw:",O_RDWR,0,&swap_vnode);
-
+  char *arg1 = kstrdup("lhd0raw:");
+  int check = vfs_open(arg1,O_RDWR,0,&swap_vnode);
+  if(!check){
   struct stat stats_file;
-
+  //kprintf("\nDUde1\n");
   VOP_STAT(swap_vnode, &stats_file);
+  //kprintf("\nDUde2\n");
 
   int swapDiskSize = stats_file.st_size;
 
   int swapPages = swapDiskSize/PAGE_SIZE;
 
-  kprintf("\nSwaps %d %d\n",swapDiskSize,swapPages);
+  //kprintf("\nSwaps %d %d\n",swapDiskSize,swapPages);
 
   swapTable = bitmap_create(swapPages);
+  }
 
 }
 

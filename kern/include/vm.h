@@ -38,6 +38,9 @@
 #define IN_MEMORY 1
 #define IN_DISK 2
 
+struct vnode *swap_vnode;
+
+
 #include <synch.h> // fix import
 #include <addrspace.h>
 
