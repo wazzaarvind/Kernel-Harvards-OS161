@@ -23,10 +23,11 @@ paddr_t size;
 //struct spinlock s_lock=SPINLOCK_INITIALIZER;
 //int clock = 0;
 unsigned int lfsr = 0xACE1u;
+int found = 0;
 unsigned int bit,t=0;
 int tpages = 0;
 struct bitmap *swapTable = NULL;
-int start;
+int start = 0;
 int numBytes;
 struct vnode *swap_vnode;
 
@@ -50,7 +51,7 @@ void vm_initialise() {
   size = 0;
   numBytes = 0;
 
-  start = 0;
+  //start = 0;
 
   spinlock_init(&vmlock);
 
@@ -208,6 +209,8 @@ void vm_bootstrap(void)
 
   int swapPages = swapDiskSize/PAGE_SIZE;
 
+  kprintf("\nSwaps %d %d\n",swapDiskSize,swapPages);
+
   swapTable = bitmap_create(swapPages);
 
 }
@@ -320,7 +323,8 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
             struct uio uioRead;
             struct iovec iovRead;
 
-            iovRead.iov_kbase = (void *)PADDR_TO_KVADDR(first->paddr);
+            //iovRead.iov_kbase = (void *)PADDR_TO_KVADDR(first->paddr);
+            iovRead.iov_kbase = (void *)first->vaddr;
             iovRead.iov_len = PAGE_SIZE;
 
             uioRead.uio_iov = &iovRead;
@@ -488,7 +492,7 @@ vaddr_t alloc_upages(void){
 
 int evict_page(void){
 
-  int found = 0;
+  //int found = 0;
   int i = start;
 
   while(i != (start-1)){
@@ -518,7 +522,8 @@ int evict_page(void){
           struct uio uioWrite;
           struct iovec iov;
 
-          iov.iov_kbase = (void *)PADDR_TO_KVADDR(temp->paddr);
+          //iov.iov_kbase = (void *)PADDR_TO_KVADDR(temp->paddr);
+          iov.iov_kbase = (void *)temp->vaddr;
           iov.iov_len = PAGE_SIZE;
 
           uioWrite.uio_iov = &iov;
@@ -528,10 +533,13 @@ int evict_page(void){
           uioWrite.uio_segflg = UIO_SYSSPACE;
           uioWrite.uio_rw = UIO_WRITE;
           uioWrite.uio_space = NULL;
-
+          kprintf("\nHi %d\n",temp->vaddr);
           int check2 = VOP_WRITE(swap_vnode, &uioWrite);
+          kprintf("\nHi\n");
           if(check2)
             kprintf("\nVOP_WRITE fail\n");
+
+          start = found+1;
 
           // Invalidate TLB.
           int spl = 0;
@@ -558,7 +566,7 @@ int evict_page(void){
     i++;
   }
 
-  start = found + 1;
+  //start = found + 1;
   return found;
 }
 
