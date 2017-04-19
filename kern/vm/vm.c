@@ -320,7 +320,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
             struct uio uioRead;
             struct iovec iovRead;
 
-            iovRead.iov_kbase = (void *)first->paddr;
+            iovRead.iov_kbase = (void *)PADDR_TO_KVADDR(first->paddr);
             iovRead.iov_len = PAGE_SIZE;
 
             uioRead.uio_iov = &iovRead;
@@ -462,7 +462,9 @@ vaddr_t alloc_upages(void){
   }
 
   if(alloc != req){
+    spinlock_release(&vmlock);
     i = evict_page();
+    spinlock_acquire(&vmlock);
     // spinlock_release(&vmlock);
     // return (vaddr_t) NULL;
   }
