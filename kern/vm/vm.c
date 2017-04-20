@@ -78,14 +78,14 @@ void vm_initialise() {
   }
 
   for(int i = 0; i < pages_Kused; i++){
-    coremap[i].available = 0;
+    //coremap[i].available = 0;
     coremap[i].chunk_size = 0;
     coremap[i].state = FIXED;
   }
 
   // Make the rest available :
   for(int j = pages_Kused; j < tpages; j++){
-    coremap[j].available = 1;
+    //coremap[j].available = 1;
     coremap[j].chunk_size = 0;
     coremap[j].state = FREE;
     coremap[j].first = NULL;
@@ -109,9 +109,9 @@ vaddr_t alloc_kpages(unsigned npages)
 
 
   for(i = 0; i < (int) tpages; i++){
-    if(coremap[i].available == 1){
+    if(coremap[i].state == FREE){
       for(int j = i;  j <  i + (int) npages; j++){
-        if(coremap[j].available == 1){
+        if(coremap[j].state == FREE){
           alloc +=1;
         } else {
           break;
@@ -130,13 +130,13 @@ vaddr_t alloc_kpages(unsigned npages)
   }
 
   int flag = 0;
-  struct page_table *store; 
+  struct page_table *store;
 
   if(alloc != req){
     //spinlock_release(&vmlock);
     //return (vaddr_t)NULL;
     i = evict_page();
-    kprintf("\nReturned i in kern is %d\n",i);
+    //kprintf("\nReturned i in kern is %d\n",i);
      if(i==-1)
     {
       spinlock_release(&vmlock);
@@ -152,7 +152,7 @@ vaddr_t alloc_kpages(unsigned npages)
 
   while(req > 0){
     req--;
-    coremap[i].available = 0;
+    //coremap[i].available = 0;
     coremap[i].chunk_size = (int) npages;
     coremap[i].state = FIXED;
     //coremap[i].first = curproc->p_addrspace->first_page;
@@ -240,7 +240,7 @@ void free_kpages(vaddr_t addr)
   }
 
   // Sanity checks :
-  if(coremap[i].available == 1 || coremap[i].chunk_size == 0){
+  if(coremap[i].state == FREE || coremap[i].chunk_size == 0){
     spinlock_release(&vmlock);
     return;
   }
@@ -250,7 +250,7 @@ void free_kpages(vaddr_t addr)
   numBytes -= pagesToInvalidate * PAGE_SIZE;
 
   while (pagesToInvalidate > 0) {
-    coremap[i].available = 1;
+    //coremap[i].available = 1;
     coremap[i].chunk_size = 0;
     coremap[i].state = FREE;
     i++;
@@ -411,7 +411,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
           	uioRead.uio_space = NULL;
 
           	VOP_READ(swap_vnode, &uioRead);
-            kprintf("\nFails?\n");
+            //kprintf("\nFails?\n");
             first->mem_or_disk = IN_MEMORY;
 
         }
@@ -421,18 +421,18 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
         spl = splhigh();
 
         for (int i=0; i<NUM_TLB; i++) {
-          kprintf("\nFails2?\n");
+          //kprintf("\nFails2?\n");
             tlb_read(&ehi, &elo, i);
             if (elo & TLBLO_VALID) {
                 continue;
               }
             ehi = faultaddress;
             elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-                   
+
 
             DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
             tlb_write(ehi, elo, i);
-             kprintf("\nFails3\n");
+             //kprintf("\nFails3\n");
             splx(spl);
             return 0;
         }
@@ -530,9 +530,9 @@ vaddr_t alloc_upages(void){
   spinlock_acquire(&vmlock);
 
   for(i = 0; i < (int) tpages; i++){
-    if(coremap[i].available == 1){
+    if(coremap[i].state == FREE){
       for(int j = i;  j <  i + (int) npages; j++){
-        if(coremap[j].available == 1){
+        if(coremap[j].state == FREE){
           alloc +=1;
         } else {
           break;
@@ -550,7 +550,7 @@ vaddr_t alloc_upages(void){
     }
   }
   int flag = 0;
-  struct page_table *store; 
+  struct page_table *store;
   if(alloc != req){
     //spinlock_release(&vmlock);
     i = evict_page();
@@ -565,7 +565,7 @@ vaddr_t alloc_upages(void){
     //kprintf("\nIllegal2\n");
     flag = 1;
     //spinlock_acquire(&vmlock);
-    
+
   }
 
   startAlloc = i;
@@ -575,7 +575,7 @@ vaddr_t alloc_upages(void){
 
   while(req > 0){
     req--;
-    coremap[i].available = 0;
+    //coremap[i].available = 0;
     coremap[i].chunk_size = npages;
     coremap[i].state = RECENTLY_USED;
     //kprintf("\nIllegal3\n");
@@ -680,7 +680,7 @@ int evict_page(void){
 // Change this
 void free_upage(paddr_t addr)
 {
-  kprintf("Addr is %d\n",addr);
+  //kprintf("Addr is %d\n",addr);
   int i = 0;
 
   spinlock_acquire(&vmlock);
@@ -701,14 +701,14 @@ void free_upage(paddr_t addr)
 
   // // Sanity checks :
   //kprintf("I is %d\n",i);
-  KASSERT(coremap[i].available != 1);
+  KASSERT(coremap[i].state != FREE);
   //   spinlock_release(&vmlock);
   //   return;
   // }
 
 
   numBytes -= PAGE_SIZE;
-  coremap[i].available = 1;
+  //coremap[i].available = 1;
   coremap[i].chunk_size = 0;
   coremap[i].state = FREE;
   coremap[i].first = NULL;
