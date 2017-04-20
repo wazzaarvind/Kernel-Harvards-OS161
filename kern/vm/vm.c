@@ -23,7 +23,7 @@ paddr_t size;
 //struct spinlock s_lock=SPINLOCK_INITIALIZER;
 //int clock = 0;
 unsigned int lfsr = 0xACE1u;
-int found = 0;
+//int found = 0;
 unsigned int bit,t=0;
 int tpages = 0;
 struct bitmap *swapTable = NULL;
@@ -129,8 +129,21 @@ vaddr_t alloc_kpages(unsigned npages)
     }
   }
 
+  int flag = 0;
+  struct page_table *store; 
+
   if(alloc != req){
+    //spinlock_release(&vmlock);
+    //return (vaddr_t)NULL;
     i = evict_page();
+    kprintf("\nReturned i in kern is %d\n",i);
+     if(i==-1)
+    {
+      spinlock_release(&vmlock);
+      return (vaddr_t) NULL;
+    }
+    store = coremap[i].first;
+    flag = 1;
   }
 
   startAlloc = i;
@@ -142,10 +155,68 @@ vaddr_t alloc_kpages(unsigned npages)
     coremap[i].available = 0;
     coremap[i].chunk_size = (int) npages;
     coremap[i].state = FIXED;
+    //coremap[i].first = curproc->p_addrspace->first_page;
     i++;
+
   }
 
   spinlock_release(&vmlock);
+
+  if(flag == 1){
+    struct page_table *temp = store; // First page of process owning this cormap page.
+          // page align faultaddress and find coresponding page in the PTE.
+      while(temp != NULL){
+        if(temp->paddr == (unsigned int)(i * PAGE_SIZE))  //does this necessarily need to be the case? Will it never be in between?
+        {
+          // Synchronization required!!
+          temp->mem_or_disk = IN_DISK; // Change mem to disk
+          int check = bitmap_alloc(swapTable, (unsigned int *)&temp->bitmapIndex);
+          if(check != 0){
+            kprintf("\nBitmap fail\n");
+          }
+          // Move the contents to disk.
+          struct uio uioWrite;
+          struct iovec iov;
+
+          iov.iov_kbase = (void *)PADDR_TO_KVADDR(temp->paddr);
+          iov.iov_len = PAGE_SIZE;
+
+          uioWrite.uio_iov = &iov;
+          uioWrite.uio_iovcnt = 1;
+          uioWrite.uio_offset = temp->bitmapIndex * PAGE_SIZE;
+          uioWrite.uio_resid = PAGE_SIZE;
+          uioWrite.uio_segflg = UIO_SYSSPACE;
+          uioWrite.uio_rw = UIO_WRITE;
+          uioWrite.uio_space = NULL;
+          //kprintf("\nHi %d\n",temp->vaddr);
+          int check2 = VOP_WRITE(swap_vnode, &uioWrite);
+          //kprintf("\nHi\n");
+          if(check2)
+            kprintf("\nVOP_WRITE fail\n");
+
+          // Invalidate TLB.
+          int spl = 0;
+
+          spl = splhigh();
+          int index = tlb_probe(temp->vaddr, 0);
+          if(index > 0)
+          {
+              tlb_write(TLBHI_INVALID(index), TLBLO_INVALID(), index);
+          }
+          splx(spl);
+
+          // Invalidate Paddr
+          temp->paddr = 0;
+          break;
+        }
+        temp = temp->next;
+      }
+
+    flag = 0;
+  }
+  bzero((void *)(PADDR_TO_KVADDR(startAlloc * PAGE_SIZE)), PAGE_SIZE);
+
+
 
   return PADDR_TO_KVADDR(startAlloc * PAGE_SIZE);
 
@@ -214,6 +285,7 @@ void vm_bootstrap(void)
 
   swapTable = bitmap_create(swapPages);
   }
+  kfree(arg1);
 
 }
 
@@ -321,6 +393,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
         if(first->mem_or_disk == IN_DISK){
 
             first->paddr = alloc_upages();
+            kprintf("\n Here 1 %d %d?\n",first->paddr,first->bitmapIndex);
 
             struct uio uioRead;
             struct iovec iovRead;
@@ -338,6 +411,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
           	uioRead.uio_space = NULL;
 
           	VOP_READ(swap_vnode, &uioRead);
+            kprintf("\nFails?\n");
             first->mem_or_disk = IN_MEMORY;
 
         }
@@ -347,17 +421,22 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
         spl = splhigh();
 
         for (int i=0; i<NUM_TLB; i++) {
+          kprintf("\nFails2?\n");
             tlb_read(&ehi, &elo, i);
             if (elo & TLBLO_VALID) {
                 continue;
               }
             ehi = faultaddress;
             elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+                   
+
             DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
             tlb_write(ehi, elo, i);
+             kprintf("\nFails3\n");
             splx(spl);
             return 0;
         }
+
 
         // TLB is currently full so evicting a TLB entry
         ehi = faultaddress;
@@ -379,6 +458,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
 
       cur_page->vaddr = faultaddress;
       cur_page->paddr = alloc_upages(); //page aligned address?
+      //kprintf("\n Here 0?\n");
       cur_page->mem_or_disk = IN_MEMORY;
 
       int index = cur_page->paddr/PAGE_SIZE;
@@ -474,11 +554,18 @@ vaddr_t alloc_upages(void){
   if(alloc != req){
     //spinlock_release(&vmlock);
     i = evict_page();
+    kprintf("\nReturned i is %d\n",i);
+    if(i==-1)
+    {
+      spinlock_release(&vmlock);
+      return (vaddr_t) NULL;
+    }
+    //kprintf("\nIllegal1\n");
     store = coremap[i].first;
+    //kprintf("\nIllegal2\n");
     flag = 1;
     //spinlock_acquire(&vmlock);
-    // spinlock_release(&vmlock);
-    // return (vaddr_t) NULL;
+    
   }
 
   startAlloc = i;
@@ -491,7 +578,9 @@ vaddr_t alloc_upages(void){
     coremap[i].available = 0;
     coremap[i].chunk_size = npages;
     coremap[i].state = RECENTLY_USED;
+    //kprintf("\nIllegal3\n");
     coremap[i].first = curproc->p_addrspace->first_page;
+   //kprintf("\nIllegal4\n");
     i++;
   }
 
@@ -529,7 +618,6 @@ vaddr_t alloc_upages(void){
           if(check2)
             kprintf("\nVOP_WRITE fail\n");
 
-          start = found+1;
 
           // Invalidate TLB.
           int spl = 0;
@@ -552,15 +640,21 @@ vaddr_t alloc_upages(void){
     flag = 0;
   }
   bzero((void *)(PADDR_TO_KVADDR(startAlloc * PAGE_SIZE)), PAGE_SIZE);
+  //kprintf("\nSuccess end %d\n",startAlloc);
   return startAlloc * PAGE_SIZE;
+
 }
 
 int evict_page(void){
 
-  //int found = 0;
+  int found = -1;
   int i = start;
+  int end = start - 1;
 
-  while(i != (start-1)){
+  if(start == 0)
+    end = tpages-1;
+
+  while(i != end){
 
     if(i == tpages-1){
       i = 0;
@@ -570,13 +664,15 @@ int evict_page(void){
 
       found = i;
 
+      start = found + 1;
+
+
       break;
     }
 
     i++;
   }
 
-  start = found + 1;
 
   return found;
 }
@@ -584,6 +680,7 @@ int evict_page(void){
 // Change this
 void free_upage(paddr_t addr)
 {
+  kprintf("Addr is %d\n",addr);
   int i = 0;
 
   spinlock_acquire(&vmlock);
@@ -603,8 +700,8 @@ void free_upage(paddr_t addr)
   //cur_first_page = cur_first_page->next;
 
   // // Sanity checks :
-  kprintf("I is %d\n",i);
-  //KASSERT(coremap[i].available != 1);
+  //kprintf("I is %d\n",i);
+  KASSERT(coremap[i].available != 1);
   //   spinlock_release(&vmlock);
   //   return;
   // }

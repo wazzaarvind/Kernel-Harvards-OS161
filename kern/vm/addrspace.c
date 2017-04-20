@@ -199,7 +199,7 @@ as_destroy(struct addrspace *as)
 	 {
 	 		if(pagedes->paddr!=0)
 	 			free_upage(pagedes->paddr);
-	 		kprintf("\nPADDR : %d\n",pagedes->paddr);
+	 		//kprintf("\nPADDR : %d\n",pagedes->paddr);
 			pagedes = pagedes->next;
 
 	 }
