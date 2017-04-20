@@ -197,8 +197,9 @@ as_destroy(struct addrspace *as)
 
 	 while(pagedes != NULL)
 	 {
-	 		if(pagedes->paddr!=0)
+		 if(pagedes->mem_or_disk == IN_MEMORY){
 	 			free_upage(pagedes->paddr);
+		  }
 	 		//kprintf("\nPADDR : %d\n",pagedes->paddr);
 			pagedes = pagedes->next;
 

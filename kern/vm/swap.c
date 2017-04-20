@@ -50,7 +50,7 @@ void swap_out(int i, struct page_table *store){
       if(temp->paddr == (unsigned int)(i * PAGE_SIZE))  //does this necessarily need to be the case? Will it never be in between?
       {
         // Synchronization required!!
-        lock_acquire(temp->pt_lock);
+        //lock_acquire(temp->pt_lock);
         temp->mem_or_disk = IN_DISK; // Change mem to disk
         int check = bitmap_alloc(swapTable, (unsigned int *)&temp->bitmapIndex);
 

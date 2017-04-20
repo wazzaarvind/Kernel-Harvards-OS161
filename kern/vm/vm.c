@@ -509,6 +509,11 @@ void free_upage(paddr_t addr)
 
   i = addr/PAGE_SIZE;
 
+  if(coremap[i].state == FREE){
+    spinlock_release(&vmlock);
+    return;
+  }
+
   /*struct page_table *cur_last_page = curproc->p_addrspace->last_page;
   struct page_table *cur_first_page = curproc->p_addrspace->first_page;
   while(cur_first_page->next!=cur_last_page)
@@ -523,7 +528,7 @@ void free_upage(paddr_t addr)
 
   // // Sanity checks :
   //kprintf("I is %d\n",i);
-  KASSERT(coremap[i].state != FREE);
+  //KASSERT(coremap[i].state != FREE);
   //   spinlock_release(&vmlock);
   //   return;
   // }
