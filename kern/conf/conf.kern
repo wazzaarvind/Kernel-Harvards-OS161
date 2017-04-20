@@ -351,6 +351,7 @@ file      proc/proc.c
 file      vm/kmalloc.c
 
 optofffile dumbvm   vm/vm.c
+optofffile dumbvm   vm/swap.c
 optofffile dumbvm   vm/addrspace.c
 
 #

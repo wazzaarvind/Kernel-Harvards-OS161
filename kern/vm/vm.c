@@ -8,7 +8,6 @@
 #include <proc.h>
 #include <current.h>
 #include <mips/tlb.h>
-#include <vm.h>
 #include <addrspace.h>
 #include <bitmap.h>
 #include <kern/iovec.h>
@@ -18,39 +17,17 @@
 #include <kern/stat.h>
 #include <mips/tlb.h>
 #include <spl.h>
+#include <vm.h>
 
 paddr_t size;
-//struct spinlock s_lock=SPINLOCK_INITIALIZER;
-//int clock = 0;
-unsigned int lfsr = 0xACE1u;
-//int found = 0;
-unsigned int bit,t=0;
-int tpages = 0;
-struct bitmap *swapTable = NULL;
-int start = 0;
+
 int numBytes;
-
-unsigned int rand(unsigned int startNumber,unsigned int endNumber)
-{
-    if(startNumber == endNumber) return startNumber;
-    int *p = NULL;
-    t = t^(int)p;
-    bit  = ((lfsr >> 0) ^ (lfsr >> 2) ^ (lfsr >> 3) ^ (lfsr >> 5) ) & 1;
-    lfsr = ((bit<<15) | (lfsr>>1) | t)%endNumber;
-    while(lfsr<startNumber){
-        lfsr = lfsr + endNumber - startNumber;
-    }
-    return lfsr;
-}
-
 
 void vm_initialise() {
 
   tpages = 0; // Total possible pages in the ram.
   size = 0;
   numBytes = 0;
-
-  //start = 0;
 
   spinlock_init(&vmlock);
 
@@ -102,9 +79,7 @@ vaddr_t alloc_kpages(unsigned npages)
 
   int alloc = 0;
   int req = (int) npages;
-  //kprintf("\ntpages: %d\n",tpages);
-  //kprintf("\nReq: %d\n",req);
-  //int startPage = 0;
+
   int i = 0, startAlloc = 0;
 
 
@@ -271,20 +246,23 @@ void vm_bootstrap(void)
 {
   char *arg1 = kstrdup("lhd0raw:");
   int check = vfs_open(arg1,O_RDWR,0,&swap_vnode);
+
   if(!check){
-  struct stat stats_file;
-  //kprintf("\nDUde1\n");
-  VOP_STAT(swap_vnode, &stats_file);
-  //kprintf("\nDUde2\n");
 
-  int swapDiskSize = stats_file.st_size;
+    struct stat stats_file;
 
-  int swapPages = swapDiskSize/PAGE_SIZE;
+    VOP_STAT(swap_vnode, &stats_file);
 
-  //kprintf("\nSwaps %d %d\n",swapDiskSize,swapPages);
+    int swapDiskSize = stats_file.st_size;
 
-  swapTable = bitmap_create(swapPages);
+    int swapPages = swapDiskSize/PAGE_SIZE;
+
+    swapTable = bitmap_create(swapPages);
+
+    swapStart = 0;
+
   }
+
   kfree(arg1);
 
 }
@@ -522,9 +500,7 @@ vaddr_t alloc_upages(void){
   int npages=1;
   int alloc = 0;
   int req = 1;
-  //kprintf("\ntpages: %d\n",tpages);
-  //kprintf("\nReq: %d\n",req);
-  //int startPage = 0;
+
   int i = 0, startAlloc = 0;
 
   spinlock_acquire(&vmlock);
@@ -640,47 +616,14 @@ vaddr_t alloc_upages(void){
     flag = 0;
   }
   bzero((void *)(PADDR_TO_KVADDR(startAlloc * PAGE_SIZE)), PAGE_SIZE);
-  //kprintf("\nSuccess end %d\n",startAlloc);
   return startAlloc * PAGE_SIZE;
 
 }
 
-int evict_page(void){
-
-  int found = -1;
-  int i = start;
-  int end = start - 1;
-
-  if(start == 0)
-    end = tpages-1;
-
-  while(i != end){
-
-    if(i == tpages-1){
-      i = 0;
-    }
-
-    if(coremap[i].state == RECENTLY_USED){ // Change for LRU.
-
-      found = i;
-
-      start = found + 1;
-
-
-      break;
-    }
-
-    i++;
-  }
-
-
-  return found;
-}
 
 // Change this
 void free_upage(paddr_t addr)
 {
-  //kprintf("Addr is %d\n",addr);
   int i = 0;
 
   spinlock_acquire(&vmlock);

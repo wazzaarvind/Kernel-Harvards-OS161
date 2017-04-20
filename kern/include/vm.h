@@ -65,8 +65,10 @@ struct coremap_struct *coremap;
 struct spinlock vmlock;
 // Free=0 Dirty=1 Fixed=2 Clean=3
 
-//Handle State
-
+// Swap variables
+int tpages;
+int swapStart;
+struct bitmap *swapTable;
 
 #include <machine/vm.h>
 
