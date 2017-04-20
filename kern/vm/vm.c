@@ -105,93 +105,47 @@ vaddr_t alloc_kpages(unsigned npages)
   }
 
   int flag = 0;
+
   struct page_table *store;
 
   if(alloc != req){
     //spinlock_release(&vmlock);
     //return (vaddr_t)NULL;
     i = evict_page();
-    //kprintf("\nReturned i in kern is %d\n",i);
-     if(i==-1)
+
+    // RAM full of kernel pages.
+     if(i == -1)
     {
       spinlock_release(&vmlock);
       return (vaddr_t) NULL;
     }
+
     store = coremap[i].first;
+    //swap_in(i, store);
     flag = 1;
   }
 
   startAlloc = i;
   numBytes += alloc * PAGE_SIZE;
 
-
   while(req > 0){
     req--;
     //coremap[i].available = 0;
     coremap[i].chunk_size = (int) npages;
     coremap[i].state = FIXED;
-    //coremap[i].first = curproc->p_addrspace->first_page;
+    // Kpage doesn't need a PTE.
+    coremap[i].first = NULL;
     i++;
-
   }
 
   spinlock_release(&vmlock);
 
-  if(flag == 1){
-    struct page_table *temp = store; // First page of process owning this cormap page.
-          // page align faultaddress and find coresponding page in the PTE.
-      while(temp != NULL){
-        if(temp->paddr == (unsigned int)(i * PAGE_SIZE))  //does this necessarily need to be the case? Will it never be in between?
-        {
-          // Synchronization required!!
-          temp->mem_or_disk = IN_DISK; // Change mem to disk
-          int check = bitmap_alloc(swapTable, (unsigned int *)&temp->bitmapIndex);
-          if(check != 0){
-            kprintf("\nBitmap fail\n");
-          }
-          // Move the contents to disk.
-          struct uio uioWrite;
-          struct iovec iov;
-
-          iov.iov_kbase = (void *)PADDR_TO_KVADDR(temp->paddr);
-          iov.iov_len = PAGE_SIZE;
-
-          uioWrite.uio_iov = &iov;
-          uioWrite.uio_iovcnt = 1;
-          uioWrite.uio_offset = temp->bitmapIndex * PAGE_SIZE;
-          uioWrite.uio_resid = PAGE_SIZE;
-          uioWrite.uio_segflg = UIO_SYSSPACE;
-          uioWrite.uio_rw = UIO_WRITE;
-          uioWrite.uio_space = NULL;
-          //kprintf("\nHi %d\n",temp->vaddr);
-          int check2 = VOP_WRITE(swap_vnode, &uioWrite);
-          //kprintf("\nHi\n");
-          if(check2)
-            kprintf("\nVOP_WRITE fail\n");
-
-          // Invalidate TLB.
-          int spl = 0;
-
-          spl = splhigh();
-          int index = tlb_probe(temp->vaddr, 0);
-          if(index > 0)
-          {
-              tlb_write(TLBHI_INVALID(index), TLBLO_INVALID(), index);
-          }
-          splx(spl);
-
-          // Invalidate Paddr
-          temp->paddr = 0;
-          break;
-        }
-        temp = temp->next;
-      }
-
+  if(flag == 1) {
+    swap_out(startAlloc, store);
     flag = 0;
   }
+
   bzero((void *)(PADDR_TO_KVADDR(startAlloc * PAGE_SIZE)), PAGE_SIZE);
-
-
 
   return PADDR_TO_KVADDR(startAlloc * PAGE_SIZE);
 
@@ -527,97 +481,40 @@ vaddr_t alloc_upages(void){
   }
   int flag = 0;
   struct page_table *store;
+
   if(alloc != req){
-    //spinlock_release(&vmlock);
+
     i = evict_page();
-    kprintf("\nReturned i is %d\n",i);
-    if(i==-1)
-    {
+
+    if(i == -1) {
       spinlock_release(&vmlock);
       return (vaddr_t) NULL;
     }
-    //kprintf("\nIllegal1\n");
     store = coremap[i].first;
-    //kprintf("\nIllegal2\n");
     flag = 1;
-    //spinlock_acquire(&vmlock);
-
   }
 
   startAlloc = i;
   numBytes += alloc * PAGE_SIZE;
 
-
-
   while(req > 0){
     req--;
-    //coremap[i].available = 0;
     coremap[i].chunk_size = npages;
     coremap[i].state = RECENTLY_USED;
-    //kprintf("\nIllegal3\n");
     coremap[i].first = curproc->p_addrspace->first_page;
-   //kprintf("\nIllegal4\n");
     i++;
   }
 
   spinlock_release(&vmlock);
 
   if(flag == 1){
-    struct page_table *temp = store; // First page of process owning this cormap page.
-          // page align faultaddress and find coresponding page in the PTE.
-      while(temp != NULL){
-        if(temp->paddr == (unsigned int)(i * PAGE_SIZE))  //does this necessarily need to be the case? Will it never be in between?
-        {
-          // Synchronization required!!
-          temp->mem_or_disk = IN_DISK; // Change mem to disk
-          int check = bitmap_alloc(swapTable, (unsigned int *)&temp->bitmapIndex);
-          if(check != 0){
-            kprintf("\nBitmap fail\n");
-          }
-          // Move the contents to disk.
-          struct uio uioWrite;
-          struct iovec iov;
-
-          iov.iov_kbase = (void *)PADDR_TO_KVADDR(temp->paddr);
-          iov.iov_len = PAGE_SIZE;
-
-          uioWrite.uio_iov = &iov;
-          uioWrite.uio_iovcnt = 1;
-          uioWrite.uio_offset = temp->bitmapIndex * PAGE_SIZE;
-          uioWrite.uio_resid = PAGE_SIZE;
-          uioWrite.uio_segflg = UIO_SYSSPACE;
-          uioWrite.uio_rw = UIO_WRITE;
-          uioWrite.uio_space = NULL;
-          //kprintf("\nHi %d\n",temp->vaddr);
-          int check2 = VOP_WRITE(swap_vnode, &uioWrite);
-          //kprintf("\nHi\n");
-          if(check2)
-            kprintf("\nVOP_WRITE fail\n");
-
-
-          // Invalidate TLB.
-          int spl = 0;
-
-          spl = splhigh();
-          int index = tlb_probe(temp->vaddr, 0);
-          if(index > 0)
-          {
-              tlb_write(TLBHI_INVALID(index), TLBLO_INVALID(), index);
-          }
-          splx(spl);
-
-          // Invalidate Paddr
-          temp->paddr = 0;
-          break;
-        }
-        temp = temp->next;
-      }
-
+    swap_out(startAlloc, store);
     flag = 0;
   }
-  bzero((void *)(PADDR_TO_KVADDR(startAlloc * PAGE_SIZE)), PAGE_SIZE);
-  return startAlloc * PAGE_SIZE;
 
+  bzero((void *)(PADDR_TO_KVADDR(startAlloc * PAGE_SIZE)), PAGE_SIZE);
+
+  return startAlloc * PAGE_SIZE;
 }
 
 

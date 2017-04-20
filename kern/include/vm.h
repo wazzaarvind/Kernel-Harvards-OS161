@@ -38,7 +38,6 @@
 #define IN_MEMORY 1
 #define IN_DISK 2
 
-struct vnode *swap_vnode;
 
 
 #include <synch.h> // fix import
@@ -54,7 +53,6 @@ struct coremap_struct
 	//int owner;
 	int chunk_size;
 	int state;
-	int available;
 	struct page_table *first;
 	//paddr_t start;
 
@@ -69,6 +67,8 @@ struct spinlock vmlock;
 int tpages;
 int swapStart;
 struct bitmap *swapTable;
+struct vnode *swap_vnode;
+
 
 #include <machine/vm.h>
 
@@ -90,9 +90,8 @@ int vm_fault(int faulttype, vaddr_t faultaddress);
 
 void free_upage(vaddr_t addr);
 
-unsigned int rand(unsigned int startNumber,unsigned int endNumber);
-
-
+// Swap functions
+void swap_out(int i, struct page_table*);
 
 /* Allocate/free kernel heap pages (called by kmalloc/kfree) */
 vaddr_t alloc_kpages(unsigned npages);

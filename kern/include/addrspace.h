@@ -47,6 +47,7 @@ struct page_table {
   int mem_or_disk; //mem=1,disk=2
   int bitmapIndex;
   struct page_table *next;
+  struct lock *pt_lock;
 };
 
 struct segment{
