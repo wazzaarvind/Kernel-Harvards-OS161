@@ -138,7 +138,9 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	struct page_table *newPte = NULL;
 
 	while(oldPte != NULL){
+		lock_acquire(oldPte->pt_lock);
 		newPte = kmalloc(sizeof(struct page_table));
+		newPte->pt_lock = lock_create("Pte lock");
 		newPte->paddr = alloc_upages();
 		if(newPte->paddr == 0){
 				return ENOMEM;
@@ -160,7 +162,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 
 		// Now copy over the contents of the memory
 
-
+		lock_release(oldPte->pt_lock);
 		oldPte = oldPte->next;
 	}
 
@@ -209,6 +211,7 @@ as_destroy(struct addrspace *as)
 	 while(as->first_page!=NULL)
 	 {
 	 	pagedes = as->first_page;
+		lock_destroy(pagedes->pt_lock);
 		as->first_page = as->first_page->next;
 		kfree(pagedes);
 	 }

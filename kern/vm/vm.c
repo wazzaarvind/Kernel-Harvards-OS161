@@ -365,6 +365,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
     {
       // So create one
       struct page_table *cur_page = kmalloc(sizeof(struct page_table));
+      cur_page->pt_lock = lock_create("page lock");
 
       if(cur_page == NULL){
   			return ENOMEM;
@@ -514,28 +515,8 @@ void free_upage(paddr_t addr)
     return;
   }
 
-  /*struct page_table *cur_last_page = curproc->p_addrspace->last_page;
-  struct page_table *cur_first_page = curproc->p_addrspace->first_page;
-  while(cur_first_page->next!=cur_last_page)
-  {
-    cur_first_page = cur_first_page->next;
-  }
-  kfree(cur_last_page);
-  curproc->p_addrspace->last_page = cur_first_page;
-  curproc->p_addrspace->last_page->next = NULL;*/
-
-  //cur_first_page = cur_first_page->next;
-
-  // // Sanity checks :
-  //kprintf("I is %d\n",i);
-  //KASSERT(coremap[i].state != FREE);
-  //   spinlock_release(&vmlock);
-  //   return;
-  // }
-
 
   numBytes -= PAGE_SIZE;
-  //coremap[i].available = 1;
   coremap[i].chunk_size = 0;
   coremap[i].state = FREE;
   coremap[i].first = NULL;
