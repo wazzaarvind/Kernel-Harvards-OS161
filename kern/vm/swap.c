@@ -97,3 +97,25 @@ void swap_out(int i, struct page_table *store){
     }
 
 }
+
+void swap_in(struct page_table *first){
+
+  struct uio uioRead;
+  struct iovec iovRead;
+
+  iovRead.iov_kbase = (void *)PADDR_TO_KVADDR(first->paddr);
+  //iovRead.iov_kbase = (void *)first->vaddr;
+  iovRead.iov_len = PAGE_SIZE;
+
+  uioRead.uio_iov = &iovRead;
+  uioRead.uio_iovcnt = 1;
+  uioRead.uio_offset = first->bitmapIndex * PAGE_SIZE; //not sure
+  uioRead.uio_resid = PAGE_SIZE;
+  uioRead.uio_segflg = UIO_SYSSPACE;
+  uioRead.uio_rw = UIO_READ;
+  uioRead.uio_space = NULL;
+
+  VOP_READ(swap_vnode, &uioRead);
+  //kprintf("\nFails?\n");
+  first->mem_or_disk = IN_MEMORY;
+}
