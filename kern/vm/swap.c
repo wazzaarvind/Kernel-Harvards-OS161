@@ -78,11 +78,17 @@ void swap_out(int i, struct page_table *store){
         //kprintf("\nHi %d\n",temp->vaddr);
         int check2 = VOP_WRITE(swap_vnode, &uioWrite);
         //kprintf("\nHi\n");
-        if(check2)
+        if(check2){
           // TODO : Handle edge case.
           kprintf("\nVOP_WRITE fail\n");
+        }
+
 
         // Invalidate TLB.
+        // // Invalidate Paddr
+        temp->paddr = -1;
+        lock_release(temp->pt_lock);
+
         int spl = 0;
 
         spl = splhigh();
@@ -92,10 +98,6 @@ void swap_out(int i, struct page_table *store){
             tlb_write(TLBHI_INVALID(index), TLBLO_INVALID(), index);
         }
         splx(spl);
-
-        // Invalidate Paddr
-        temp->paddr = -1;
-        lock_release(temp->pt_lock);
         break;
       }
       temp = temp->next;
@@ -124,15 +126,18 @@ void swap_in(struct page_table *first){
   VOP_READ(swap_vnode, &uioRead);
   //kprintf("\nFails?\n");
   first->mem_or_disk = IN_MEMORY;
+
+  int index = first->bitmapIndex;
+  first->bitmapIndex = -1;
+  lock_release(first->pt_lock);
+
   lock_acquire(bitmap_lock);
-  if(bitmap_isset(swapTable,(unsigned)first->bitmapIndex) == true)
+  if(bitmap_isset(swapTable,(unsigned)index) == true)
   {
     //kprintf("\ninside bitmap\n");
-    bitmap_unmark(swapTable,(unsigned)first->bitmapIndex);
+    bitmap_unmark(swapTable,(unsigned)index);
   }
   lock_release(bitmap_lock);
 
-  first->bitmapIndex = -1;
 
-  lock_release(first->pt_lock);
 }
