@@ -491,6 +491,7 @@ int sys_sbrk(intptr_t amount, int *retval)
                     curproc->p_addrspace->last_page = prev;
                     curproc->p_addrspace->last_page->next = NULL;
                   }
+                lock_destroy(pte->pt_lock);
                 kfree(pte);
                 break;
             }

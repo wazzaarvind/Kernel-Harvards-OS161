@@ -118,7 +118,8 @@ kill_curthread(vaddr_t epc, unsigned code, vaddr_t vaddr)
 	 * You will probably want to change this.
 	 */
 	//sys__exit(sig);
-	//
+	
+
 	curproc->exit_code=_MKWAIT_SIG(sig);
 	curproc->exit_status=1;
 	V(curproc->proc_sem);
