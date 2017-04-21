@@ -50,15 +50,16 @@ void swap_out(int i, struct page_table *store){
       if(temp->paddr == (unsigned int)(i * PAGE_SIZE))  //does this necessarily need to be the case? Will it never be in between?
       {
         // Synchronization required!!
-        //lock_acquire(temp->pt_lock);
+        lock_acquire(temp->pt_lock);
         temp->mem_or_disk = IN_DISK; // Change mem to disk
         lock_acquire(bitmap_lock);
-        int check = bitmap_alloc(swapTable, (unsigned int *)&temp->bitmapIndex);
+          int check = bitmap_alloc(swapTable, (unsigned int *)&temp->bitmapIndex);
         lock_release(bitmap_lock);
 
-          if(check != 0){
-            kprintf("\nBitmap fail\n");
-          }
+        if(check != 0){
+          // TODO : Handle edge case.
+          kprintf("\nBitmap fail\n");
+        }
 
         // Move the contents to disk.
         struct uio uioWrite;
@@ -78,6 +79,7 @@ void swap_out(int i, struct page_table *store){
         int check2 = VOP_WRITE(swap_vnode, &uioWrite);
         //kprintf("\nHi\n");
         if(check2)
+          // TODO : Handle edge case.
           kprintf("\nVOP_WRITE fail\n");
 
         // Invalidate TLB.
@@ -92,8 +94,8 @@ void swap_out(int i, struct page_table *store){
         splx(spl);
 
         // Invalidate Paddr
-        temp->paddr = 0;
-        //lock_release(temp->pt_lock);
+        temp->paddr = -1;
+        lock_release(temp->pt_lock);
         break;
       }
       temp = temp->next;
@@ -106,7 +108,7 @@ void swap_in(struct page_table *first){
   struct uio uioRead;
   struct iovec iovRead;
 
-  //lock_acquire(first->pt_lock);
+  lock_acquire(first->pt_lock);
   iovRead.iov_kbase = (void *)PADDR_TO_KVADDR(first->paddr);
   //iovRead.iov_kbase = (void *)first->vaddr;
   iovRead.iov_len = PAGE_SIZE;
@@ -129,7 +131,8 @@ void swap_in(struct page_table *first){
     bitmap_unmark(swapTable,(unsigned)first->bitmapIndex);
   }
   lock_release(bitmap_lock);
-  //lock_release(first->pt_lock);
 
+  first->bitmapIndex = -1;
 
+  lock_release(first->pt_lock);
 }

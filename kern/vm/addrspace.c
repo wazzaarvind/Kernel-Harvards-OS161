@@ -73,9 +73,6 @@ as_create(void)
 	as->heap_top = 0;
 	as->heap_bottom = 0;
 
-	// as->stack_bottom = USERSTACK;
-	// as->stack_top = USERSTACK - (1024 * PAGE_SIZE);
-
 	return as;
 }
 
@@ -140,7 +137,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	struct page_table *newPte = NULL;
 
 	while(oldPte != NULL){
-		//lock_acquire(oldPte->pt_lock);
+		lock_acquire(oldPte->pt_lock);
 		newPte = kmalloc(sizeof(struct page_table));
 		newPte->paddr = -1;
 		newPte->pt_lock = lock_create("Pte lock");
@@ -165,9 +162,9 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		  	iovRead.iov_len = PAGE_SIZE;
 
 		  	uioRead.uio_iov = &iovRead;
-		 	uioRead.uio_iovcnt = 1;
+		  	uioRead.uio_iovcnt = 1;
 		  	uioRead.uio_offset = oldPte->bitmapIndex * PAGE_SIZE; //not sure
-		 	uioRead.uio_resid = PAGE_SIZE;
+		  	uioRead.uio_resid = PAGE_SIZE;
 		  	uioRead.uio_segflg = UIO_SYSSPACE;
 		  	uioRead.uio_rw = UIO_READ;
 		  	uioRead.uio_space = NULL;
@@ -175,30 +172,31 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		  	VOP_READ(swap_vnode, &uioRead);
 
 		  	//lock_acquire(newPte->pt_lock);
-		  	newPte->mem_or_disk = IN_DISK; 
+		  	newPte->mem_or_disk = IN_DISK;
 		  	lock_acquire(bitmap_lock);
 		  	bitmap_alloc(swapTable, (unsigned int *)&newPte->bitmapIndex);
 		  	lock_release(bitmap_lock);
 
 		  	struct uio uioWrite;
-        	struct iovec iov;
+        struct iovec iov;
 
-        	iov.iov_kbase = (void *)(newPte->bitmapIndex * PAGE_SIZE);
-        	iov.iov_len = PAGE_SIZE;
+        iov.iov_kbase = (void *)(newPte->bitmapIndex * PAGE_SIZE);
+        iov.iov_len = PAGE_SIZE;
 
-       		uioWrite.uio_iov = &iov;
-        	uioWrite.uio_iovcnt = 1;
-        	uioWrite.uio_offset = newPte->bitmapIndex * PAGE_SIZE;
-        	uioWrite.uio_resid = PAGE_SIZE;
-        	uioWrite.uio_segflg = UIO_SYSSPACE;
-        	uioWrite.uio_rw = UIO_WRITE;
-        	uioWrite.uio_space = NULL;
-        	VOP_WRITE(swap_vnode, &uioWrite);
-        	//lock_release(newPte->pt_lock);
- 
+       	uioWrite.uio_iov = &iov;
+        uioWrite.uio_iovcnt = 1;
+        uioWrite.uio_offset = newPte->bitmapIndex * PAGE_SIZE;
+        uioWrite.uio_resid = PAGE_SIZE;
+        uioWrite.uio_segflg = UIO_SYSSPACE;
+        uioWrite.uio_rw = UIO_WRITE;
+        uioWrite.uio_space = NULL;
+        VOP_WRITE(swap_vnode, &uioWrite);
+        //lock_release(newPte->pt_lock);
+
+		} else { // TODO : Check!
+			memmove((void *)(MIPS_KSEG0+newPte->paddr),(const void *)(MIPS_KSEG0+oldPte->paddr),PAGE_SIZE);
 		}
 
-		memmove((void *)(MIPS_KSEG0+newPte->paddr),(const void *)(MIPS_KSEG0+oldPte->paddr),PAGE_SIZE);
 
 		if(newas->last_page == NULL){
 			newas->last_page = newPte;
@@ -210,7 +208,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 
 		// Now copy over the contents of the memory
 
-		//lock_release(oldPte->pt_lock);
+		lock_release(oldPte->pt_lock);
 		oldPte = oldPte->next;
 	}
 
@@ -248,10 +246,19 @@ as_destroy(struct addrspace *as)
 	 while(pagedes != NULL)
 	 {
 	 	// do we need locks?
+	 	lock_acquire(pagedes->pt_lock);
 		 if(pagedes->mem_or_disk == IN_MEMORY){
 	 			free_upage(pagedes->paddr,pagedes->bitmapIndex);
-		  }
+		  } else {
+				lock_acquire(bitmap_lock);
+				if(bitmap_isset(swapTable,(unsigned) pagedes->bitmapIndex) == true)
+				{
+					bitmap_unmark(swapTable,(unsigned) pagedes->bitmapIndex);
+				}
+				lock_release(bitmap_lock);
+			}
 	 		//kprintf("\nPADDR : %d\n",pagedes->paddr);
+  	 lock_release(pagedes->pt_lock);
 			pagedes = pagedes->next;
 
 	 }

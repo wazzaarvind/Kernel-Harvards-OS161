@@ -111,8 +111,15 @@ vaddr_t alloc_kpages(unsigned npages)
   if(alloc != req){
     //spinlock_release(&vmlock);
     //return (vaddr_t)NULL;
-    if(swap_or_not == SWAP_ENABLED)
+    if(swap_or_not == SWAP_ENABLED){
       i = evict_page();
+      if(i == -1){
+        spinlock_release(&vmlock);
+        return (vaddr_t) NULL;
+      }
+      store = coremap[i].first;
+      flag = 1;
+    }
 
     // RAM full of kernel pages.
     else
@@ -120,10 +127,6 @@ vaddr_t alloc_kpages(unsigned npages)
       spinlock_release(&vmlock);
       return (vaddr_t) NULL;
     }
-
-    store = coremap[i].first;
-    //swap_in(i, store);
-    flag = 1;
   }
 
   startAlloc = i;
@@ -476,6 +479,10 @@ vaddr_t alloc_upages(void){
   if(alloc != req){
     if(swap_or_not == SWAP_ENABLED){
       i = evict_page();
+      if(i == -1){
+        spinlock_release(&vmlock);
+        return (vaddr_t) NULL;
+      }
       store = coremap[i].first;
       flag = 1;
     }
