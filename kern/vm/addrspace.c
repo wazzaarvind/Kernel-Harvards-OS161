@@ -35,6 +35,8 @@
 #include <proc.h>
 #include <spl.h>
 #include <mips/tlb.h>
+#include <uio.h>
+#include <bitmap.h>
 
 
 /*
@@ -150,7 +152,49 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		newPte->mem_or_disk = oldPte->mem_or_disk;
 		newPte->next = NULL;
 		newPte->bitmapIndex = -1;
-		
+
+		if(oldPte->mem_or_disk == IN_DISK)
+		{
+			struct uio uioRead;
+  			struct iovec iovRead;
+  			iovRead.iov_kbase = (void *)(oldPte->bitmapIndex * PAGE_SIZE);
+  			//iovRead.iov_kbase = (void *)first->vaddr;
+		  	iovRead.iov_len = PAGE_SIZE;
+
+		  	uioRead.uio_iov = &iovRead;
+		 	uioRead.uio_iovcnt = 1;
+		  	uioRead.uio_offset = oldPte->bitmapIndex * PAGE_SIZE; //not sure
+		 	uioRead.uio_resid = PAGE_SIZE;
+		  	uioRead.uio_segflg = UIO_SYSSPACE;
+		  	uioRead.uio_rw = UIO_READ;
+		  	uioRead.uio_space = NULL;
+
+		  	VOP_READ(swap_vnode, &uioRead);
+
+		  	lock_acquire(newPte->pt_lock);
+		  	newPte->mem_or_disk = IN_DISK; 
+		  	lock_acquire(bitmap_lock);
+		  	bitmap_alloc(swapTable, (unsigned int *)&newPte->bitmapIndex);
+		  	lock_release(bitmap_lock);
+
+		  	struct uio uioWrite;
+        	struct iovec iov;
+
+        	iov.iov_kbase = (void *)(newPte->bitmapIndex * PAGE_SIZE);
+        	iov.iov_len = PAGE_SIZE;
+
+       		uioWrite.uio_iov = &iov;
+        	uioWrite.uio_iovcnt = 1;
+        	uioWrite.uio_offset = newPte->bitmapIndex * PAGE_SIZE;
+        	uioWrite.uio_resid = PAGE_SIZE;
+        	uioWrite.uio_segflg = UIO_SYSSPACE;
+        	uioWrite.uio_rw = UIO_WRITE;
+        	uioWrite.uio_space = NULL;
+        	VOP_WRITE(swap_vnode, &uioWrite);
+        	lock_release(newPte->pt_lock);
+ 
+		}
+
 		memmove((void *)(MIPS_KSEG0+newPte->paddr),(const void *)(MIPS_KSEG0+oldPte->paddr),PAGE_SIZE);
 
 		if(newas->last_page == NULL){

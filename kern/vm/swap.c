@@ -52,7 +52,9 @@ void swap_out(int i, struct page_table *store){
         // Synchronization required!!
         lock_acquire(temp->pt_lock);
         temp->mem_or_disk = IN_DISK; // Change mem to disk
+        lock_acquire(bitmap_lock);
         int check = bitmap_alloc(swapTable, (unsigned int *)&temp->bitmapIndex);
+        lock_release(bitmap_lock);
 
           if(check != 0){
             kprintf("\nBitmap fail\n");
