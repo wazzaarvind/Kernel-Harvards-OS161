@@ -474,15 +474,16 @@ vaddr_t alloc_upages(void){
   struct page_table *store;
 
   if(alloc != req){
-    if(swap_or_not == SWAP_ENABLED)
+    if(swap_or_not == SWAP_ENABLED){
       i = evict_page();
-
+      store = coremap[i].first;
+      flag = 1;
+    }
     else {
       spinlock_release(&vmlock);
       return (vaddr_t) NULL;
     }
-    store = coremap[i].first;
-    flag = 1;
+
   }
 
   startAlloc = i;
@@ -514,12 +515,11 @@ void free_upage(paddr_t addr, int index)
 {
   int i = 0;
   //lock_acquire(first->pt_lock);
-  if(index!=-1)
+  if(index!=-1 && swap_or_not == SWAP_ENABLED)
   {
     lock_acquire(bitmap_lock);
     if(bitmap_isset(swapTable,(unsigned)index) == true)
     {
-      kprintf("\nhi\n");
       bitmap_unmark(swapTable,(unsigned)index);
     }
     lock_release(bitmap_lock);

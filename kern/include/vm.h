@@ -96,7 +96,7 @@ void free_upage(vaddr_t addr, int index);
 
 // Swap functions
 void swap_out(int i, struct page_table*);
-void swap_in(struct page_table*); 
+void swap_in(struct page_table*);
 
 /* Allocate/free kernel heap pages (called by kmalloc/kfree) */
 vaddr_t alloc_kpages(unsigned npages);
