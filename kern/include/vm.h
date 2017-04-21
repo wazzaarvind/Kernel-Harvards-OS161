@@ -66,6 +66,7 @@ struct spinlock vmlock;
 // Swap variables
 int tpages;
 int swapStart;
+int swap_or_not;
 struct lock *bitmap_lock;
 struct bitmap *swapTable;
 struct vnode *swap_vnode;
@@ -77,6 +78,8 @@ struct vnode *swap_vnode;
 #define VM_FAULT_READ        0    /* A read was attempted */
 #define VM_FAULT_WRITE       1    /* A write was attempted */
 #define VM_FAULT_READONLY    2    /* A write to a readonly page was attempted*/
+#define SWAP_ENABLED 1
+#define SWAP_DISABLED 2
 
 
 
