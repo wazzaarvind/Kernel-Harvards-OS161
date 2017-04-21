@@ -140,12 +140,15 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	struct page_table *newPte = NULL;
 
 	while(oldPte != NULL){
-		lock_acquire(oldPte->pt_lock);
+		//lock_acquire(oldPte->pt_lock);
 		newPte = kmalloc(sizeof(struct page_table));
+		newPte->paddr = -1;
 		newPte->pt_lock = lock_create("Pte lock");
-		newPte->paddr = alloc_upages();
-		if(newPte->paddr == 0){
-				return ENOMEM;
+		if(oldPte->mem_or_disk != IN_DISK)
+		{	newPte->paddr = alloc_upages();
+			if(newPte->paddr == 0){
+					return ENOMEM;
+			}
 		}
 
 		newPte->vaddr = oldPte->vaddr;
@@ -171,7 +174,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 
 		  	VOP_READ(swap_vnode, &uioRead);
 
-		  	lock_acquire(newPte->pt_lock);
+		  	//lock_acquire(newPte->pt_lock);
 		  	newPte->mem_or_disk = IN_DISK; 
 		  	lock_acquire(bitmap_lock);
 		  	bitmap_alloc(swapTable, (unsigned int *)&newPte->bitmapIndex);
@@ -191,7 +194,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
         	uioWrite.uio_rw = UIO_WRITE;
         	uioWrite.uio_space = NULL;
         	VOP_WRITE(swap_vnode, &uioWrite);
-        	lock_release(newPte->pt_lock);
+        	//lock_release(newPte->pt_lock);
  
 		}
 
@@ -207,7 +210,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 
 		// Now copy over the contents of the memory
 
-		lock_release(oldPte->pt_lock);
+		//lock_release(oldPte->pt_lock);
 		oldPte = oldPte->next;
 	}
 
@@ -244,6 +247,7 @@ as_destroy(struct addrspace *as)
 
 	 while(pagedes != NULL)
 	 {
+	 	// do we need locks?
 		 if(pagedes->mem_or_disk == IN_MEMORY){
 	 			free_upage(pagedes->paddr,pagedes->bitmapIndex);
 		  }

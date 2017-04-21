@@ -111,10 +111,11 @@ vaddr_t alloc_kpages(unsigned npages)
   if(alloc != req){
     //spinlock_release(&vmlock);
     //return (vaddr_t)NULL;
-    i = evict_page();
+    if(swap_or_not == SWAP_ENABLED)
+      i = evict_page();
 
     // RAM full of kernel pages.
-     if(i == -1)
+    else
     {
       spinlock_release(&vmlock);
       return (vaddr_t) NULL;
@@ -198,6 +199,8 @@ unsigned int coremap_used_bytes(void)
 
 void vm_bootstrap(void)
 {
+  swap_or_not = SWAP_DISABLED;
+
   char *arg1 = kstrdup("lhd0raw:");
   int check = vfs_open(arg1,O_RDWR,0,&swap_vnode);
 
@@ -216,6 +219,8 @@ void vm_bootstrap(void)
     bitmap_lock = lock_create("Bitmap lock");
 
     swapStart = 0;
+
+    swap_or_not = SWAP_ENABLED;
 
   }
 
@@ -469,10 +474,10 @@ vaddr_t alloc_upages(void){
   struct page_table *store;
 
   if(alloc != req){
+    if(swap_or_not == SWAP_ENABLED)
+      i = evict_page();
 
-    i = evict_page();
-
-    if(i == -1) {
+    else {
       spinlock_release(&vmlock);
       return (vaddr_t) NULL;
     }
@@ -513,7 +518,10 @@ void free_upage(paddr_t addr, int index)
   {
     lock_acquire(bitmap_lock);
     if(bitmap_isset(swapTable,(unsigned)index) == true)
+    {
+      kprintf("\nhi\n");
       bitmap_unmark(swapTable,(unsigned)index);
+    }
     lock_release(bitmap_lock);
   }
   spinlock_acquire(&vmlock);
