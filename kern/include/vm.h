@@ -66,6 +66,7 @@ struct spinlock vmlock;
 // Swap variables
 int tpages;
 int swapStart;
+struct lock *bitmap_lock;
 struct bitmap *swapTable;
 struct vnode *swap_vnode;
 
@@ -88,7 +89,7 @@ void vm_bootstrap(void);
 int vm_fault(int faulttype, vaddr_t faultaddress);
 
 
-void free_upage(vaddr_t addr);
+void free_upage(vaddr_t addr, int index);
 
 // Swap functions
 void swap_out(int i, struct page_table*);

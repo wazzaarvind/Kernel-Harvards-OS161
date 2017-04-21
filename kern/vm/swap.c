@@ -120,6 +120,14 @@ void swap_in(struct page_table *first){
   VOP_READ(swap_vnode, &uioRead);
   //kprintf("\nFails?\n");
   first->mem_or_disk = IN_MEMORY;
+  lock_acquire(bitmap_lock);
+  if(bitmap_isset(swapTable,(unsigned)first->bitmapIndex) == true)
+  {
+    kprintf("\ninside bitmap\n");
+    bitmap_unmark(swapTable,(unsigned)first->bitmapIndex);
+  }
+  lock_release(bitmap_lock);
   lock_release(first->pt_lock);
+
 
 }

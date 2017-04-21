@@ -213,6 +213,8 @@ void vm_bootstrap(void)
 
     swapTable = bitmap_create(swapPages);
 
+    bitmap_lock = lock_create("Bitmap lock");
+
     swapStart = 0;
 
   }
@@ -375,6 +377,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
       cur_page->paddr = alloc_upages(); //page aligned address?
       //kprintf("\n Here 0?\n");
       cur_page->mem_or_disk = IN_MEMORY;
+      cur_page->bitmapIndex = -1;
 
       int index = cur_page->paddr/PAGE_SIZE;
 
@@ -502,10 +505,17 @@ vaddr_t alloc_upages(void){
 
 
 // Change this
-void free_upage(paddr_t addr)
+void free_upage(paddr_t addr, int index)
 {
   int i = 0;
-
+  //lock_acquire(first->pt_lock);
+  if(index!=-1)
+  {
+    lock_acquire(bitmap_lock);
+    if(bitmap_isset(swapTable,(unsigned)index) == true)
+      bitmap_unmark(swapTable,(unsigned)index);
+    lock_release(bitmap_lock);
+  }
   spinlock_acquire(&vmlock);
 
   i = addr/PAGE_SIZE;

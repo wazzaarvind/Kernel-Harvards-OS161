@@ -485,7 +485,7 @@ int sys_sbrk(intptr_t amount, int *retval)
                     tlb_write(TLBHI_INVALID(index), TLBLO_INVALID(), index);
                 }
                 splx(spl);
-                free_upage(pte->paddr);
+                free_upage(pte->paddr,pte->bitmapIndex);
                 if(pte->next==NULL)
                  {
                     curproc->p_addrspace->last_page = prev;

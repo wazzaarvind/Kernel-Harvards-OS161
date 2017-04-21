@@ -149,7 +149,8 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		newPte->vaddr = oldPte->vaddr;
 		newPte->mem_or_disk = oldPte->mem_or_disk;
 		newPte->next = NULL;
-
+		newPte->bitmapIndex = -1;
+		
 		memmove((void *)(MIPS_KSEG0+newPte->paddr),(const void *)(MIPS_KSEG0+oldPte->paddr),PAGE_SIZE);
 
 		if(newas->last_page == NULL){
@@ -200,7 +201,7 @@ as_destroy(struct addrspace *as)
 	 while(pagedes != NULL)
 	 {
 		 if(pagedes->mem_or_disk == IN_MEMORY){
-	 			free_upage(pagedes->paddr);
+	 			free_upage(pagedes->paddr,pagedes->bitmapIndex);
 		  }
 	 		//kprintf("\nPADDR : %d\n",pagedes->paddr);
 			pagedes = pagedes->next;
