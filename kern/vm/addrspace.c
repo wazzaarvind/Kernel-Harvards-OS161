@@ -79,6 +79,8 @@ as_create(void)
 int
 as_copy(struct addrspace *old, struct addrspace **ret)
 {
+	//kprintf("\nascopy");
+
 	struct addrspace *newas;
 
 	newas = as_create();
@@ -157,8 +159,8 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		{
 			struct uio uioRead;
   			struct iovec iovRead;
-  			iovRead.iov_kbase = (void *)(oldPte->bitmapIndex * PAGE_SIZE);
-  			//iovRead.iov_kbase = (void *)first->vaddr;
+  			//iovRead.iov_kbase = (void *)(oldPte->bitmapIndex * PAGE_SIZE);
+  			iovRead.iov_kbase = (void *)oldPte->vaddr;
 		  	iovRead.iov_len = PAGE_SIZE;
 
 		  	uioRead.uio_iov = &iovRead;
@@ -180,7 +182,8 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		  	struct uio uioWrite;
         struct iovec iov;
 
-        iov.iov_kbase = (void *)(newPte->bitmapIndex * PAGE_SIZE);
+        //iov.iov_kbase = (void *)(newPte->bitmapIndex * PAGE_SIZE);
+        iovRead.iov_kbase = (void *)newPte->vaddr;
         iov.iov_len = PAGE_SIZE;
 
        	uioWrite.uio_iov = &iov;
@@ -224,6 +227,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 void
 as_destroy(struct addrspace *as)
 {
+	//kprintf("\nasdes");
 
 	as->heap_top = 0;
 	as->heap_bottom = 0;
@@ -249,6 +253,7 @@ as_destroy(struct addrspace *as)
 	 	lock_acquire(pagedes->pt_lock);
 		 if(pagedes->mem_or_disk == IN_MEMORY){
 	 			free_upage(pagedes->paddr,pagedes->bitmapIndex);
+	 			lock_release(pagedes->pt_lock);
 		  } else {
 				lock_acquire(bitmap_lock);
 				if(bitmap_isset(swapTable,(unsigned) pagedes->bitmapIndex) == true)
@@ -258,7 +263,7 @@ as_destroy(struct addrspace *as)
 				lock_release(bitmap_lock);
 			}
 	 		//kprintf("\nPADDR : %d\n",pagedes->paddr);
-  	 lock_release(pagedes->pt_lock);
+  	 
 			pagedes = pagedes->next;
 
 	 }

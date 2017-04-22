@@ -74,6 +74,8 @@ void vm_initialise() {
 
 vaddr_t alloc_kpages(unsigned npages)
 {
+  //kprintf("\nallock");
+
   spinlock_acquire(&vmlock);
 
 
@@ -158,6 +160,8 @@ vaddr_t alloc_kpages(unsigned npages)
 
 void free_kpages(vaddr_t addr)
 {
+  //kprintf("\nfreek");
+
   spinlock_acquire(&vmlock);
 
   int i = 0;
@@ -316,6 +320,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
 
     // page align faultaddress and find coresponding page in the PTE.
     while(first != NULL){
+      //kprintf("\n%d",first->vaddr);
       //
       if(first->vaddr == faultaddress)  //does this necessarily need to be the case? Will it never be in between?
       {
@@ -445,6 +450,8 @@ void vm_tlbshootdown(const struct tlbshootdown *ts)
 
 vaddr_t alloc_upages(void){
 
+  //kprintf("\nallocu");
+
   int npages=1;
   int alloc = 0;
   int req = 1;
@@ -508,6 +515,7 @@ vaddr_t alloc_upages(void){
 
   if(flag == 1){
     swap_out(startAlloc, store);
+    //kprintf("\nBack to allocu");
     flag = 0;
   }
 
@@ -520,6 +528,8 @@ vaddr_t alloc_upages(void){
 // Change this
 void free_upage(paddr_t addr, int index)
 {
+  //kprintf("\nfreeu");
+
   int i = 0;
   //lock_acquire(first->pt_lock);
   if(index!=-1 && swap_or_not == SWAP_ENABLED)

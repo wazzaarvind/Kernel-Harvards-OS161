@@ -20,6 +20,8 @@
 #include <spl.h>
 
 int evict_page(void){
+  //kprintf("\nevict");
+
 
   int found = -1;
   int i = swapStart;
@@ -43,18 +45,22 @@ int evict_page(void){
 }
 
 void swap_out(int i, struct page_table *store){
+  //kprintf("\nSwapOut");
 
   struct page_table *temp = store; // First page of process owning this cormap page.
         // page align faultaddress and find coresponding page in the PTE.
     while(temp != NULL){
       if(temp->paddr == (unsigned int)(i * PAGE_SIZE))  //does this necessarily need to be the case? Will it never be in between?
       {
-        // Synchronization required!!
-        lock_acquire(temp->pt_lock);
-        temp->mem_or_disk = IN_DISK; // Change mem to disk
+
         lock_acquire(bitmap_lock);
           int check = bitmap_alloc(swapTable, (unsigned int *)&temp->bitmapIndex);
         lock_release(bitmap_lock);
+        // Synchronization required!!
+        lock_acquire(temp->pt_lock);
+        temp->mem_or_disk = IN_DISK; // Change mem to disk
+
+        
 
         if(check != 0){
           // TODO : Handle edge case.
@@ -75,6 +81,8 @@ void swap_out(int i, struct page_table *store){
         uioWrite.uio_segflg = UIO_SYSSPACE;
         uioWrite.uio_rw = UIO_WRITE;
         uioWrite.uio_space = NULL;
+        //kprintf("\nSwapOutmid");
+
         //kprintf("\nHi %d\n",temp->vaddr);
         int check2 = VOP_WRITE(swap_vnode, &uioWrite);
         //kprintf("\nHi\n");
@@ -87,6 +95,7 @@ void swap_out(int i, struct page_table *store){
         // Invalidate TLB.
         // // Invalidate Paddr
         temp->paddr = -1;
+
         lock_release(temp->pt_lock);
 
         int spl = 0;
@@ -102,15 +111,17 @@ void swap_out(int i, struct page_table *store){
       }
       temp = temp->next;
     }
+    //kprintf("\nSwapOutend");
 
 }
 
 void swap_in(struct page_table *first){
+  //kprintf("\nSwapIN");
 
   struct uio uioRead;
   struct iovec iovRead;
 
-  lock_acquire(first->pt_lock);
+  //lock_acquire(first->pt_lock);
   iovRead.iov_kbase = (void *)PADDR_TO_KVADDR(first->paddr);
   //iovRead.iov_kbase = (void *)first->vaddr;
   iovRead.iov_len = PAGE_SIZE;
@@ -129,7 +140,7 @@ void swap_in(struct page_table *first){
 
   int index = first->bitmapIndex;
   first->bitmapIndex = -1;
-  lock_release(first->pt_lock);
+  //lock_release(first->pt_lock);
 
   lock_acquire(bitmap_lock);
   if(bitmap_isset(swapTable,(unsigned)index) == true)
