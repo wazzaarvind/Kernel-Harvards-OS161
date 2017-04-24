@@ -222,6 +222,8 @@ void vm_bootstrap(void)
 
     int swapPages = swapDiskSize/PAGE_SIZE;
 
+    //kprintf("Swap size %d", swapPages);
+
     swapTable = bitmap_create(swapPages);
 
     bitmap_lock = lock_create("Bitmap lock");
@@ -540,9 +542,11 @@ void free_upage(paddr_t addr, int index)
   //lock_acquire(first->pt_lock);
   if(index!=-1 && swap_or_not == SWAP_ENABLED)
   {
+
     lock_acquire(bitmap_lock);
     if(bitmap_isset(swapTable,(unsigned)index) == true)
     {
+      //kprintf("\nInside bitmap %d",index);
       bitmap_unmark(swapTable,(unsigned)index);
     }
     lock_release(bitmap_lock);
