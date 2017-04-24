@@ -263,7 +263,7 @@ as_destroy(struct addrspace *as)
 				lock_release(bitmap_lock);
 			}
 	 		//kprintf("\nPADDR : %d\n",pagedes->paddr);
-  	 
+
 			pagedes = pagedes->next;
 
 	 }
@@ -272,7 +272,7 @@ as_destroy(struct addrspace *as)
 	 while(as->first_page!=NULL)
 	 {
 	 	pagedes = as->first_page;
-		lock_destroy(pagedes->pt_lock);
+		//lock_destroy(pagedes->pt_lock);
 		as->first_page = as->first_page->next;
 		kfree(pagedes);
 	 }

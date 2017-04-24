@@ -116,6 +116,7 @@ vaddr_t alloc_kpages(unsigned npages)
     if(swap_or_not == SWAP_ENABLED){
       i = evict_page();
       if(i == -1){
+        panic("Test panic.");
         spinlock_release(&vmlock);
         return (vaddr_t) NULL;
       }
@@ -336,6 +337,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
     if(pageFlag==1){
       /* Disable interrupts on this CPU while frobbing the TLB. */
       // TODO : KASSERT
+        lock_acquire(first->pt_lock);
 
         if(first->mem_or_disk == IN_DISK){
 
@@ -344,6 +346,10 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
             swap_in(first);
 
         }
+
+        lock_release(first->pt_lock);
+
+
 
         paddr_t paddr = first->paddr;
 

@@ -56,11 +56,11 @@ void swap_out(int i, struct page_table *store){
         lock_acquire(bitmap_lock);
           int check = bitmap_alloc(swapTable, (unsigned int *)&temp->bitmapIndex);
         lock_release(bitmap_lock);
+
         // Synchronization required!!
         lock_acquire(temp->pt_lock);
         temp->mem_or_disk = IN_DISK; // Change mem to disk
 
-        
 
         if(check != 0){
           // TODO : Handle edge case.
@@ -121,7 +121,6 @@ void swap_in(struct page_table *first){
   struct uio uioRead;
   struct iovec iovRead;
 
-  //lock_acquire(first->pt_lock);
   iovRead.iov_kbase = (void *)PADDR_TO_KVADDR(first->paddr);
   //iovRead.iov_kbase = (void *)first->vaddr;
   iovRead.iov_len = PAGE_SIZE;
@@ -140,7 +139,6 @@ void swap_in(struct page_table *first){
 
   int index = first->bitmapIndex;
   first->bitmapIndex = -1;
-  //lock_release(first->pt_lock);
 
   lock_acquire(bitmap_lock);
   if(bitmap_isset(swapTable,(unsigned)index) == true)
