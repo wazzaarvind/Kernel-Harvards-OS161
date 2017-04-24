@@ -141,9 +141,9 @@ void swap_in(struct page_table *first){
   first->bitmapIndex = -1;
 
   lock_acquire(bitmap_lock);
+
   if(bitmap_isset(swapTable,(unsigned)index) == true)
   {
-    //kprintf("\ninside bitmap\n");
     bitmap_unmark(swapTable,(unsigned)index);
   }
   lock_release(bitmap_lock);

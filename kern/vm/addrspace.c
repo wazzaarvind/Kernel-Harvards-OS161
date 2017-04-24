@@ -255,6 +255,7 @@ as_destroy(struct addrspace *as)
 	 			free_upage(pagedes->paddr,pagedes->bitmapIndex);
 	 			lock_release(pagedes->pt_lock);
 		  } else {
+				lock_release(pagedes->pt_lock);
 				lock_acquire(bitmap_lock);
 				if(bitmap_isset(swapTable,(unsigned) pagedes->bitmapIndex) == true)
 				{
@@ -272,7 +273,7 @@ as_destroy(struct addrspace *as)
 	 while(as->first_page!=NULL)
 	 {
 	 	pagedes = as->first_page;
-		//lock_destroy(pagedes->pt_lock);
+		lock_destroy(pagedes->pt_lock);
 		as->first_page = as->first_page->next;
 		kfree(pagedes);
 	 }
