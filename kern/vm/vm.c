@@ -211,6 +211,7 @@ void vm_bootstrap(void)
   //kprintf("\nHi1");
 
   char *arg1 = kstrdup("lhd0raw:");
+
   int check = vfs_open(arg1,O_RDWR,0,&swap_vnode);
 
   if(!check){
@@ -223,7 +224,7 @@ void vm_bootstrap(void)
 
     int swapPages = swapDiskSize/PAGE_SIZE;
 
-    //kprintf("Swap size %d", swapPages);
+    kprintf("Swap size %d\n", swapPages);
 
     swapTable = bitmap_create(swapPages);
 
@@ -415,8 +416,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
       //kprintf("\nNew PTE is %d",cur_page->vaddr);
 
       if(curproc->p_addrspace->last_page == NULL){
-        if(swap_or_not == SWAP_ENABLED)
-          coremap[index].first = cur_page;
+        coremap[index].first = cur_page;
         curproc->p_addrspace->last_page = cur_page;
         curproc->p_addrspace->first_page = cur_page;
       } else {

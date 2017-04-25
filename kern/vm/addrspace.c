@@ -173,16 +173,12 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		newPte->next = NULL;
 		newPte->bitmapIndex = oldPte->bitmapIndex;
 
-		if(swap_or_not == SWAP_ENABLED)
-		{
+
 			if(oldPte->mem_or_disk == IN_DISK)
 			{
 			  swap_in(newPte);
 
-			} else { // TODO : Check!
-			memmove((void *)(MIPS_KSEG0+newPte->paddr),(const void *)(MIPS_KSEG0+oldPte->paddr),PAGE_SIZE);
 			}
-		}
 		else
 		{ // TODO : Check!
 			memmove((void *)(MIPS_KSEG0+newPte->paddr),(const void *)(MIPS_KSEG0+oldPte->paddr),PAGE_SIZE);
@@ -196,6 +192,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 			newas->last_page->next = newPte;
 			newas->last_page = newas->last_page->next;
 		}
+
 		if(swap_or_not == SWAP_ENABLED)
 		{
 			lock_release(newPte->pt_lock);
@@ -220,7 +217,6 @@ void
 as_destroy(struct addrspace *as)
 {
 	//kprintf("\nasdes");
-
 	as->heap_top = 0;
 	as->heap_bottom = 0;
 

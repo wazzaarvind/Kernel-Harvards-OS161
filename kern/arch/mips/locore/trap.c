@@ -111,21 +111,21 @@ kill_curthread(vaddr_t epc, unsigned code, vaddr_t vaddr)
 		break;
 	}
 
-	kprintf("Fatal user mode trap %u sig %d (%s, epc 0x%x, vaddr 0x%x)\n",
-		code, sig, trapcodenames[code], epc, vaddr);
-
 	/*
 	 * You will probably want to change this.
 	 */
 	//sys__exit(sig);
-	
+
 
 	curproc->exit_code=_MKWAIT_SIG(sig);
 	curproc->exit_status=1;
 	V(curproc->proc_sem);
 	thread_exit();
 
-	//panic("I don't know how to handle this\n");
+	kprintf("Fatal user mode trap %u sig %d (%s, epc 0x%x, vaddr 0x%x)\n",
+		code, sig, trapcodenames[code], epc, vaddr);
+	panic("I don't know how to handle this\n");
+
 }
 
 /*
