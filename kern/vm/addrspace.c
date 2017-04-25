@@ -168,6 +168,14 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 			return ENOMEM;
 		}
 
+		int index = 0;
+
+		index = newPte->paddr/PAGE_SIZE;
+
+		coremap[index].state = RECENTLY_USED;
+
+
+
 		newPte->vaddr = oldPte->vaddr;
 		newPte->mem_or_disk = oldPte->mem_or_disk;
 		newPte->next = NULL;

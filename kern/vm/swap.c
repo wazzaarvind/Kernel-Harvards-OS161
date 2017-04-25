@@ -50,8 +50,17 @@ void swap_out(int i, struct page_table *store){
   struct page_table *temp = store; // First page of process owning this cormap page.
         // page align faultaddress and find coresponding page in the PTE.
     while(temp != NULL){
+
+
       if(temp->paddr == (unsigned int)(i * PAGE_SIZE))  //does this necessarily need to be the case? Will it never be in between?
       {
+        unsigned int ind = 0;
+
+        lock_acquire(bitmap_lock);
+          int check = bitmap_alloc(swapTable, &ind);
+        lock_release(bitmap_lock);
+
+
         int spl = 0;
 
         spl = splhigh();
@@ -62,13 +71,9 @@ void swap_out(int i, struct page_table *store){
         }
         splx(spl);
 
-        // Synchronization required!!
-        unsigned int ind = 0;
-        lock_acquire(bitmap_lock);
-          int check = bitmap_alloc(swapTable, &ind);
-        lock_release(bitmap_lock);
-
         lock_acquire(temp->pt_lock);
+
+        // Synchronization required!!
 
         temp->mem_or_disk = IN_DISK; // Change mem to disk
         temp->bitmapIndex = ind;
@@ -95,27 +100,21 @@ void swap_out(int i, struct page_table *store){
         //kprintf("\nSwapOutmid");
 
         int check2 = VOP_WRITE(swap_vnode, &uioWrite);
-        //kprintf("\nHi\n");
+
         if(check2){
-          // TODO : Handle edge case.
-          kprintf("\nLast index bitmap : %d\n",bitmap_isset(swapTable, (unsigned int)16383));
-          kprintf("\nvaddr :  %d\n", temp->vaddr);
-          kprintf("\npaddr :  %d\n", temp->paddr);
-          kprintf("\nbitmap :  %d\n", temp->bitmapIndex);
+
           kprintf("\nVOP_WRITE fail\n");
         }
 
-
-        // Invalidate TLB.
-        // // Invalidate Paddr
-        temp->paddr = -1;
-
         lock_release(temp->pt_lock);
+        temp->paddr = -1;
         break;
       }
+
+
       temp = temp->next;
+
     }
-    //kprintf("\nSwapOutend");
 
 }
 

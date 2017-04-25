@@ -352,7 +352,17 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
 
              first->paddr = alloc_upages();
 
-              swap_in(first);
+             if(first->paddr == 0){
+               return ENOMEM;
+             }
+
+             swap_in(first);
+
+             int index = 0;
+
+             index = first->paddr/PAGE_SIZE;
+
+             coremap[index].state = RECENTLY_USED;
 
           }
 
@@ -406,11 +416,16 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
 
       cur_page->vaddr = faultaddress;
       cur_page->paddr = alloc_upages(); //page aligned address?
+
       //kprintf("\n Here 0?\n");
 
       if(cur_page->paddr == 0){
         return ENOMEM;
       }
+
+      int index = 0;
+      index = cur_page->paddr/PAGE_SIZE;
+      coremap[index].state = RECENTLY_USED;
 
       cur_page->mem_or_disk = IN_MEMORY;
       cur_page->bitmapIndex = -1;
@@ -529,7 +544,7 @@ vaddr_t alloc_upages(void){
   while(req > 0){
     req--;
     coremap[i].chunk_size = npages;
-    coremap[i].state = RECENTLY_USED;
+    coremap[i].state = VICTIM;
     coremap[i].first = curproc->p_addrspace->first_page;
     i++;
   }
@@ -538,7 +553,6 @@ vaddr_t alloc_upages(void){
 
   if(flag == 1){
     swap_out(startAlloc, store);
-    //kprintf("\nBack to allocu");
     flag = 0;
   }
 
