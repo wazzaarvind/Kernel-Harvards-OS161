@@ -80,6 +80,7 @@ int
 as_copy(struct addrspace *old, struct addrspace **ret)
 {
 	//kprintf("\nascopy");
+	kprintf("\nHi4");
 
 	struct addrspace *newas;
 
@@ -140,8 +141,9 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 
 	while(oldPte != NULL){
 
+
 		newPte = kmalloc(sizeof(struct page_table));
-		newPte->paddr = -1;
+		
 		newPte->pt_lock = lock_create("Pte lock");
 
 		if(swap_or_not == SWAP_ENABLED)
@@ -149,9 +151,10 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 			lock_acquire(newPte->pt_lock);
 
 			lock_acquire(oldPte->pt_lock);
+			newPte->paddr = -1;
 		}
-
-		newPte->paddr = alloc_upages();
+		else
+			newPte->paddr = alloc_upages();
 
 
 		newPte->vaddr = oldPte->vaddr;

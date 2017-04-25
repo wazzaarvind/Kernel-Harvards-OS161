@@ -208,6 +208,7 @@ unsigned int coremap_used_bytes(void)
 void vm_bootstrap(void)
 {
   swap_or_not = SWAP_DISABLED;
+  kprintf("\nHi1");
 
   char *arg1 = kstrdup("lhd0raw:");
   int check = vfs_open(arg1,O_RDWR,0,&swap_vnode);
@@ -231,6 +232,7 @@ void vm_bootstrap(void)
     swapStart = 0;
 
     swap_or_not = SWAP_ENABLED;
+    kprintf("\nHi2");
 
   }
 
@@ -401,8 +403,9 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
       //kprintf("\n Here 0?\n");
       cur_page->mem_or_disk = IN_MEMORY;
       cur_page->bitmapIndex = -1;
-
-      int index = cur_page->paddr/PAGE_SIZE;
+      int index = 0;
+      if(swap_or_not == SWAP_ENABLED)
+        index = cur_page->paddr/PAGE_SIZE;
 
       if(cur_page->paddr == 0){
           return ENOMEM;
@@ -412,8 +415,8 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
       //kprintf("\nNew PTE is %d",cur_page->vaddr);
 
       if(curproc->p_addrspace->last_page == NULL){
-
-        coremap[index].first = cur_page;
+        if(swap_or_not == SWAP_ENABLED)
+          coremap[index].first = cur_page;
         curproc->p_addrspace->last_page = cur_page;
         curproc->p_addrspace->first_page = cur_page;
       } else {
@@ -504,6 +507,7 @@ vaddr_t alloc_upages(void){
       flag = 1;
     }
     else {
+      kprintf("\nHi3\n");
       spinlock_release(&vmlock);
       return (vaddr_t) NULL;
     }
