@@ -174,11 +174,12 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		newPte->bitmapIndex = oldPte->bitmapIndex;
 
 
-			if(oldPte->mem_or_disk == IN_DISK)
-			{
-			  swap_in(newPte);
-
-			}
+		if(oldPte->mem_or_disk == IN_DISK)
+		{
+		  swap_in(newPte);
+			newPte->mem_or_disk = IN_MEMORY;
+			newPte->bitmapIndex = -1;
+		}
 		else
 		{ // TODO : Check!
 			memmove((void *)(MIPS_KSEG0+newPte->paddr),(const void *)(MIPS_KSEG0+oldPte->paddr),PAGE_SIZE);
@@ -244,33 +245,37 @@ as_destroy(struct addrspace *as)
 	 	}
 	 	// do we need locks?
 	 	else{
-	 	lock_acquire(pagedes->pt_lock);
-		 if(pagedes->mem_or_disk == IN_MEMORY){
-	 			free_upage(pagedes->paddr,pagedes->bitmapIndex);
-	 			lock_release(pagedes->pt_lock);
-		  } else {
-				lock_release(pagedes->pt_lock);
-				lock_acquire(bitmap_lock);
-				if(bitmap_isset(swapTable,(unsigned) pagedes->bitmapIndex) == true)
-				{
-					bitmap_unmark(swapTable,(unsigned) pagedes->bitmapIndex);
+	 	     lock_acquire(pagedes->pt_lock);
+			 if(pagedes->mem_or_disk == IN_MEMORY){
+		 			free_upage(pagedes->paddr, -1);
+					lock_release(pagedes->pt_lock);
+			  } else {
+					lock_release(pagedes->pt_lock);
+					lock_acquire(bitmap_lock);
+					if(bitmap_isset(swapTable,(unsigned) pagedes->bitmapIndex) == true)
+					{
+						bitmap_unmark(swapTable,(unsigned) pagedes->bitmapIndex);
+					}
+					lock_release(bitmap_lock);
 				}
-				lock_release(bitmap_lock);
+		 		//kprintf("\nPADDR : %d\n",pagedes->paddr);
+
+				pagedes = pagedes->next;
 			}
-	 		//kprintf("\nPADDR : %d\n",pagedes->paddr);
-
-			pagedes = pagedes->next;
-		}
-
 	 }
 
 	 // Next destroy the PTE.
 	 while(as->first_page!=NULL)
 	 {
 	 	pagedes = as->first_page;
+		//struct lock *temp_lock = pagedes->pt_lock;
+		//lock_acquire(temp_lock);
 		lock_destroy(pagedes->pt_lock);
+		//lock_release(temp_lock);
+
 		as->first_page = as->first_page->next;
 		kfree(pagedes);
+
 	 }
 
 	kfree(as);

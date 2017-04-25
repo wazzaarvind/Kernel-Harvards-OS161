@@ -148,7 +148,9 @@ vaddr_t alloc_kpages(unsigned npages)
   spinlock_release(&vmlock);
 
   if(flag == 1) {
+    //lock_acquire(store->pt_lock);
     swap_out(startAlloc, store);
+    //lock_release(store->pt_lock);
     flag = 0;
   }
 
@@ -355,10 +357,12 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
           }
 
           lock_release(first->pt_lock);
+
         }
 
 
         paddr_t paddr = first->paddr;
+
 
         spl = splhigh();
 
@@ -385,6 +389,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
         elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
         tlb_random(ehi, elo);
         splx(spl);
+
         return 0;
     }
 
@@ -402,11 +407,13 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
       cur_page->vaddr = faultaddress;
       cur_page->paddr = alloc_upages(); //page aligned address?
       //kprintf("\n Here 0?\n");
+
+      if(cur_page->paddr == 0){
+        return ENOMEM;
+      }
+
       cur_page->mem_or_disk = IN_MEMORY;
       cur_page->bitmapIndex = -1;
-      int index = 0;
-      if(swap_or_not == SWAP_ENABLED)
-        index = cur_page->paddr/PAGE_SIZE;
 
       if(cur_page->paddr == 0){
           return ENOMEM;
@@ -416,6 +423,8 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
       //kprintf("\nNew PTE is %d",cur_page->vaddr);
 
       if(curproc->p_addrspace->last_page == NULL){
+        int index = 0;
+        index = cur_page->paddr/PAGE_SIZE;
         coremap[index].first = cur_page;
         curproc->p_addrspace->last_page = cur_page;
         curproc->p_addrspace->first_page = cur_page;
