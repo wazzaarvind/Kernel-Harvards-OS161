@@ -143,9 +143,13 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		newPte = kmalloc(sizeof(struct page_table));
 		newPte->paddr = -1;
 		newPte->pt_lock = lock_create("Pte lock");
-		lock_acquire(newPte->pt_lock);
 
-		lock_acquire(oldPte->pt_lock);
+		if(swap_or_not == SWAP_ENABLED)
+		{
+			lock_acquire(newPte->pt_lock);
+
+			lock_acquire(oldPte->pt_lock);
+		}
 
 		newPte->paddr = alloc_upages();
 
@@ -155,11 +159,18 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		newPte->next = NULL;
 		newPte->bitmapIndex = oldPte->bitmapIndex;
 
-		if(oldPte->mem_or_disk == IN_DISK)
+		if(swap_or_not == SWAP_ENABLED)
 		{
+			if(oldPte->mem_or_disk == IN_DISK)
+			{
 			  swap_in(newPte);
 
-		} else { // TODO : Check!
+			} else { // TODO : Check!
+			memmove((void *)(MIPS_KSEG0+newPte->paddr),(const void *)(MIPS_KSEG0+oldPte->paddr),PAGE_SIZE);
+			}
+		}
+		else 
+		{ // TODO : Check!
 			memmove((void *)(MIPS_KSEG0+newPte->paddr),(const void *)(MIPS_KSEG0+oldPte->paddr),PAGE_SIZE);
 		}
 
@@ -171,9 +182,11 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 			newas->last_page->next = newPte;
 			newas->last_page = newas->last_page->next;
 		}
-
-		lock_release(newPte->pt_lock);
-		lock_release(oldPte->pt_lock);
+		if(swap_or_not == SWAP_ENABLED)
+		{
+			lock_release(newPte->pt_lock);
+			lock_release(oldPte->pt_lock);
+		}
 
 		// Now copy over the contents of the memory
 
@@ -214,7 +227,13 @@ as_destroy(struct addrspace *as)
 
 	 while(pagedes != NULL)
 	 {
+	 	if(swap_or_not == SWAP_DISABLED)
+	 	{
+	 		free_upage(pagedes->paddr,-1);
+	 		pagedes = pagedes->next;
+	 	}
 	 	// do we need locks?
+	 	else{
 	 	lock_acquire(pagedes->pt_lock);
 		 if(pagedes->mem_or_disk == IN_MEMORY){
 	 			free_upage(pagedes->paddr,pagedes->bitmapIndex);
@@ -231,6 +250,7 @@ as_destroy(struct addrspace *as)
 	 		//kprintf("\nPADDR : %d\n",pagedes->paddr);
 
 			pagedes = pagedes->next;
+		}
 
 	 }
 

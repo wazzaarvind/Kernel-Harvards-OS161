@@ -339,18 +339,20 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
     if(pageFlag==1){
       /* Disable interrupts on this CPU while frobbing the TLB. */
       // TODO : KASSERT
-        lock_acquire(first->pt_lock);
+        if(swap_or_not == SWAP_ENABLED)
+        {
+          lock_acquire(first->pt_lock);
 
-        if(first->mem_or_disk == IN_DISK){
+          if(first->mem_or_disk == IN_DISK){
 
-            first->paddr = alloc_upages();
+             first->paddr = alloc_upages();
 
-            swap_in(first);
+              swap_in(first);
 
+          }
+
+          lock_release(first->pt_lock);
         }
-
-        lock_release(first->pt_lock);
-
 
 
         paddr_t paddr = first->paddr;
