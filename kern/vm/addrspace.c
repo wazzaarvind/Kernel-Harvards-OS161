@@ -80,7 +80,7 @@ int
 as_copy(struct addrspace *old, struct addrspace **ret)
 {
 	//kprintf("\nascopy");
-	kprintf("\nHi4");
+	//kprintf("\nHi4");
 
 	struct addrspace *newas;
 
@@ -113,6 +113,11 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	// Copying segments one by one.
 	while(oldPtr != NULL){
 		newPtr = kmalloc(sizeof(struct segment));
+
+		if(newPtr == NULL){
+			return ENOMEM;
+		}
+
 		newPtr->start = oldPtr->start;
 		newPtr->end = oldPtr->end;
 		newPtr->npages = oldPtr->npages;
@@ -143,7 +148,11 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 
 
 		newPte = kmalloc(sizeof(struct page_table));
-		
+
+		if(newPte == NULL){
+			return ENOMEM;
+		}
+
 		newPte->pt_lock = lock_create("Pte lock");
 
 		if(swap_or_not == SWAP_ENABLED)
@@ -151,11 +160,13 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 			lock_acquire(newPte->pt_lock);
 
 			lock_acquire(oldPte->pt_lock);
-			newPte->paddr = -1;
 		}
-		else
-			newPte->paddr = alloc_upages();
 
+		newPte->paddr = alloc_upages();
+
+		if(newPte->paddr == 0){
+			return ENOMEM;
+		}
 
 		newPte->vaddr = oldPte->vaddr;
 		newPte->mem_or_disk = oldPte->mem_or_disk;
@@ -172,7 +183,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 			memmove((void *)(MIPS_KSEG0+newPte->paddr),(const void *)(MIPS_KSEG0+oldPte->paddr),PAGE_SIZE);
 			}
 		}
-		else 
+		else
 		{ // TODO : Check!
 			memmove((void *)(MIPS_KSEG0+newPte->paddr),(const void *)(MIPS_KSEG0+oldPte->paddr),PAGE_SIZE);
 		}

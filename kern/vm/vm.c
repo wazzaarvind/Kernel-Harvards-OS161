@@ -208,7 +208,7 @@ unsigned int coremap_used_bytes(void)
 void vm_bootstrap(void)
 {
   swap_or_not = SWAP_DISABLED;
-  kprintf("\nHi1");
+  //kprintf("\nHi1");
 
   char *arg1 = kstrdup("lhd0raw:");
   int check = vfs_open(arg1,O_RDWR,0,&swap_vnode);
@@ -232,7 +232,7 @@ void vm_bootstrap(void)
     swapStart = 0;
 
     swap_or_not = SWAP_ENABLED;
-    kprintf("\nHi2");
+    //kprintf("\nHi2");
 
   }
 
@@ -507,7 +507,7 @@ vaddr_t alloc_upages(void){
       flag = 1;
     }
     else {
-      kprintf("\nHi3\n");
+      //kprintf("\nHi3\n");
       spinlock_release(&vmlock);
       return (vaddr_t) NULL;
     }
