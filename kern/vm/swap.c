@@ -57,7 +57,12 @@ void swap_out(int i, struct page_table *store){
         unsigned int ind = 0;
 
         lock_acquire(bitmap_lock);
-          int check = bitmap_alloc(swapTable, &ind);
+        int check = bitmap_alloc(swapTable, &ind);
+        //kprintf("\nBitmap fail\n%d,%d",bitmap_isset(swapTable,(unsigned)8191),bitmap_isset(swapTable,(unsigned)8190));
+        if(check != 0){
+          // TODO : Handle edge case.
+          //kprintf("\nBitmap fail\n%d,%d",bitmap_isset(swapTable,(unsigned)8191),bitmap_isset(swapTable,(unsigned)8190));
+        }
           //kprintf("\nInside bitmap %d", ind);
         lock_release(bitmap_lock);
 
@@ -78,10 +83,7 @@ void swap_out(int i, struct page_table *store){
         temp->mem_or_disk = IN_DISK; // Change mem to disk
         temp->bitmapIndex = ind;
 
-        if(check != 0){
-          // TODO : Handle edge case.
-          kprintf("\nBitmap fail\n");
-        }
+        
 
         // Move the contents to disk.
         struct uio uioWrite;
@@ -147,8 +149,9 @@ void swap_in(struct page_table *first){
 
   if(bitmap_isset(swapTable,(unsigned)index) == true)
   {
-    //kprintf("\nInside bitmap swap_in %d",index);
+    //kprintf("\nInside bitmap swap_in %d",bitmap_isset(swapTable,index));
     bitmap_unmark(swapTable,(unsigned)index);
+    //kprintf("\nInside bitmap swap_in second%d",bitmap_isset(swapTable,index));
   }
   lock_release(bitmap_lock);
 
