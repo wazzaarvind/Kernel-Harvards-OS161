@@ -180,14 +180,11 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		newPte->mem_or_disk = oldPte->mem_or_disk;
 		newPte->next = NULL;
 
-		newPte->bitmapIndex = oldPte->bitmapIndex;
-
-
 		if(oldPte->mem_or_disk == IN_DISK)
 		{
-		  swap_in(newPte);
-			newPte->mem_or_disk = IN_MEMORY;
-			newPte->bitmapIndex = -1;
+			newPte->bitmapIndex = oldPte->bitmapIndex;
+		  swap_in_disk(newPte);
+
 		}
 		else
 		{ // TODO : Check!
