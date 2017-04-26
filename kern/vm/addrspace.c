@@ -179,6 +179,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 		newPte->vaddr = oldPte->vaddr;
 		newPte->mem_or_disk = oldPte->mem_or_disk;
 		newPte->next = NULL;
+
 		newPte->bitmapIndex = oldPte->bitmapIndex;
 
 
@@ -248,20 +249,21 @@ as_destroy(struct addrspace *as)
 	 {
 	 	if(swap_or_not == SWAP_DISABLED)
 	 	{
-	 		free_upage(pagedes->paddr,-1);
+	 		free_upage(pagedes->paddr);
 	 		pagedes = pagedes->next;
 	 	}
 	 	// do we need locks?
 	 	else{
 	 	     lock_acquire(pagedes->pt_lock);
 			 if(pagedes->mem_or_disk == IN_MEMORY){
-		 			free_upage(pagedes->paddr, -1);
+		 			free_upage(pagedes->paddr);
 					lock_release(pagedes->pt_lock);
 			  } else {
 					lock_release(pagedes->pt_lock);
 					lock_acquire(bitmap_lock);
 					if(bitmap_isset(swapTable,(unsigned) pagedes->bitmapIndex) == true)
 					{
+						//kprintf("\nInside bitmap %d", pagedes->bitmapIndex);
 						bitmap_unmark(swapTable,(unsigned) pagedes->bitmapIndex);
 					}
 					lock_release(bitmap_lock);

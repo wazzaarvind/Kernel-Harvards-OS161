@@ -93,7 +93,7 @@ void vm_bootstrap(void);
 int vm_fault(int faulttype, vaddr_t faultaddress);
 
 
-void free_upage(vaddr_t addr, int index);
+void free_upage(vaddr_t addr);
 
 // Swap functions
 void swap_out(int i, struct page_table*);

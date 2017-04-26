@@ -58,6 +58,7 @@ void swap_out(int i, struct page_table *store){
 
         lock_acquire(bitmap_lock);
           int check = bitmap_alloc(swapTable, &ind);
+          //kprintf("\nInside bitmap %d", ind);
         lock_release(bitmap_lock);
 
 
@@ -74,7 +75,6 @@ void swap_out(int i, struct page_table *store){
         lock_acquire(temp->pt_lock);
 
         // Synchronization required!!
-
         temp->mem_or_disk = IN_DISK; // Change mem to disk
         temp->bitmapIndex = ind;
 
@@ -147,6 +147,7 @@ void swap_in(struct page_table *first){
 
   if(bitmap_isset(swapTable,(unsigned)index) == true)
   {
+    //kprintf("\nInside bitmap swap_in %d",index);
     bitmap_unmark(swapTable,(unsigned)index);
   }
   lock_release(bitmap_lock);

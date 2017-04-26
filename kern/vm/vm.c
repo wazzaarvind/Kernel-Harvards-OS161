@@ -563,23 +563,23 @@ vaddr_t alloc_upages(void){
 
 
 // Change this
-void free_upage(paddr_t addr, int index)
+void free_upage(paddr_t addr)
 {
   //kprintf("\nfreeu");
 
   int i = 0;
   //lock_acquire(first->pt_lock);
-  if(index!=-1 && swap_or_not == SWAP_ENABLED)
-  {
-
-    lock_acquire(bitmap_lock);
-    if(bitmap_isset(swapTable,(unsigned)index) == true)
-    {
-      //kprintf("\nInside bitmap %d",index);
-      bitmap_unmark(swapTable,(unsigned)index);
-    }
-    lock_release(bitmap_lock);
-  }
+  // if(index!=-1 && swap_or_not == SWAP_ENABLED)
+  // {
+  //
+  //   lock_acquire(bitmap_lock);
+  //   if(bitmap_isset(swapTable,(unsigned)index) == true)
+  //   {
+  //     kprintf("\nInside bitmap %d",index);
+  //     bitmap_unmark(swapTable,(unsigned)index);
+  //   }
+  //   lock_release(bitmap_lock);
+  // }
   spinlock_acquire(&vmlock);
 
   i = addr/PAGE_SIZE;
