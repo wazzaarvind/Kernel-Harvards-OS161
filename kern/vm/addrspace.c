@@ -256,9 +256,9 @@ as_destroy(struct addrspace *as)
 	 	     lock_acquire(pagedes->pt_lock);
 			 if(pagedes->mem_or_disk == IN_MEMORY){
 		 			free_upage(pagedes->paddr);
-					lock_release(pagedes->pt_lock);
+					//lock_release(pagedes->pt_lock);
 			  } else {
-					lock_release(pagedes->pt_lock);
+					//lock_release(pagedes->pt_lock);
 					lock_acquire(bitmap_lock);
 					//if(bitmap_isset(swapTable,(unsigned) pagedes->bitmapIndex) == true)
 					//{
@@ -268,7 +268,7 @@ as_destroy(struct addrspace *as)
 					lock_release(bitmap_lock);
 					//lock_release(pagedes->pt_lock);
 				}
-				//lock_release(pagedes->pt_lock);
+				lock_release(pagedes->pt_lock);
 		 		//kprintf("\nPADDR : %d\n",pagedes->paddr);
 
 				pagedes = pagedes->next;
