@@ -223,7 +223,9 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 void
 as_destroy(struct addrspace *as)
 {
-	//kprintf("\nasdes");
+	// (void) as;
+	// return;
+	// kprintf("\nasdes");
 	as->heap_top = 0;
 	as->heap_bottom = 0;
 
@@ -264,7 +266,9 @@ as_destroy(struct addrspace *as)
 						bitmap_unmark(swapTable,(unsigned) pagedes->bitmapIndex);
 					}
 					lock_release(bitmap_lock);
+					//lock_release(pagedes->pt_lock);
 				}
+				//lock_release(pagedes->pt_lock);
 		 		//kprintf("\nPADDR : %d\n",pagedes->paddr);
 
 				pagedes = pagedes->next;

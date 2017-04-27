@@ -366,8 +366,8 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
 
           }
 
-          lock_release(first->pt_lock);
 
+          //lock_release(first->pt_lock);
         }
 
 
@@ -390,6 +390,8 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
             tlb_write(ehi, elo, i);
              //kprintf("\nFails3\n");
             splx(spl);
+            if(swap_or_not == SWAP_ENABLED)
+              lock_release(first->pt_lock);
             return 0;
         }
 
@@ -399,7 +401,8 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
         elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
         tlb_random(ehi, elo);
         splx(spl);
-
+        if(swap_or_not == SWAP_ENABLED)
+          lock_release(first->pt_lock);
         return 0;
     }
 
@@ -453,11 +456,6 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
       // Fill up the TLB.
       // Load TLB and return.
       spl = splhigh();
-      ehi = faultaddress;
-      elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-      tlb_random(ehi, elo);
-      splx(spl);
-      return 0;
 
       for (int i=0; i<NUM_TLB; i++) {
           tlb_read(&ehi, &elo, i);
@@ -471,6 +469,12 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
           splx(spl);
           return 0;
       }
+
+      ehi = faultaddress;
+      elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+      tlb_random(ehi, elo);
+      splx(spl);
+      return 0;
 
       // TLB is currently full so evicting a TLB entry
     }
@@ -552,6 +556,7 @@ vaddr_t alloc_upages(void){
   spinlock_release(&vmlock);
 
   if(flag == 1){
+
     swap_out(startAlloc, store);
     flag = 0;
   }

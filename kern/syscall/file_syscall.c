@@ -91,7 +91,7 @@ int sys_read(int fd, void *buf, size_t buflen, ssize_t *retval){
   struct iovec iov;
 
   //lock_acquire(curproc->filetable[fd]->lock);
-  
+
   iov.iov_ubase = (userptr_t) buf;
   iov.iov_len = buflen;
   uioRead.uio_iov = &iov;
@@ -188,7 +188,7 @@ int sys_close(int fd){
   if(curproc->filetable[fd]->counter!=0){
 	     curproc->filetable[fd]->counter--;
   }
-  kprintf("\nCounter is %d\n",curproc->filetable[fd]->counter);
+  //kprintf("\nCounter is %d\n",curproc->filetable[fd]->counter);
 	if(curproc->filetable[fd]->counter == 0)
 	{
 
