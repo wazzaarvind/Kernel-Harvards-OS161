@@ -148,9 +148,9 @@ vaddr_t alloc_kpages(unsigned npages)
   spinlock_release(&vmlock);
 
   if(flag == 1) {
-    //lock_acquire(store->pt_lock);
+    lock_acquire(store->pt_lock);
     swap_out(store);
-    //lock_release(store->pt_lock);
+    lock_release(store->pt_lock);
     flag = 0;
   }
 
@@ -555,8 +555,9 @@ vaddr_t alloc_upages(void){
   spinlock_release(&vmlock);
 
   if(flag == 1){
-
+    lock_acquire(store->pt_lock);
     swap_out(store);
+    lock_release(store->pt_lock);
     flag = 0;
   }
 

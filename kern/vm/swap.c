@@ -60,7 +60,7 @@ void swap_out(struct page_table *store){
 
     lock_release(bitmap_lock);
 
-    lock_acquire(temp->pt_lock);
+    //lock_acquire(temp->pt_lock);
 
     int spl = 0;
 
@@ -103,7 +103,7 @@ void swap_out(struct page_table *store){
     temp->paddr = -1;
 
 
-    lock_release(temp->pt_lock);
+    //lock_release(temp->pt_lock);
 
 }
 
