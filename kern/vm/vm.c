@@ -363,6 +363,12 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
 
              index = first->paddr/PAGE_SIZE;
 
+             if(coremap[index].state == DESTORY){
+              lock_release(coremap[index].page->pt_lock);
+         			lock_destroy(coremap[index].page->pt_lock);
+         			kfree(coremap[index].page);
+         		 }
+
              coremap[index].state = RECENTLY_USED;
              coremap[index].page = first;
 
@@ -430,6 +436,13 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
 
       int index = 0;
       index = cur_page->paddr/PAGE_SIZE;
+
+      if(coremap[index].state == DESTORY){
+        lock_release(coremap[index].page->pt_lock); 
+  			lock_destroy(coremap[index].page->pt_lock);
+  			kfree(coremap[index].page);
+  		}
+
       coremap[index].state = RECENTLY_USED;
       coremap[index].page = cur_page;
 

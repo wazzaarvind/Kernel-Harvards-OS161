@@ -33,7 +33,7 @@
 #define FIXED 1
 #define FREE 2
 #define RECENTLY_USED 3
-#define NOT_RECENTLY_USED 4
+#define DESTORY 4
 #define VICTIM 5
 
 #define IN_MEMORY 1

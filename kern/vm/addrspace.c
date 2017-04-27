@@ -172,6 +172,11 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 
 		index = newPte->paddr/PAGE_SIZE;
 
+		if(coremap[index].state == DESTORY){
+			lock_destroy(coremap[index].page->pt_lock);
+			kfree(coremap[index].page);
+		}
+
 		coremap[index].state = RECENTLY_USED;
 		coremap[index].page = newPte;
 
@@ -254,22 +259,21 @@ as_destroy(struct addrspace *as)
 	 	// do we need locks?
 	 	else{
 	 	     lock_acquire(pagedes->pt_lock);
-			 if(pagedes->mem_or_disk == IN_MEMORY){
-		 			free_upage(pagedes->paddr);
-					lock_release(pagedes->pt_lock);
-			  } else {
-					lock_release(pagedes->pt_lock);
-					lock_acquire(bitmap_lock);
-					//if(bitmap_isset(swapTable,(unsigned) pagedes->bitmapIndex) == true)
-					//{
-						//kprintf("\nInside bitmap %d", pagedes->bitmapIndex);
+				 if(pagedes->mem_or_disk == IN_MEMORY){
+					 	int index = pagedes->paddr/PAGE_SIZE;
+						if(coremap[index].state == VICTIM){
+							coremap[index].state = DESTORY;
+						} else {
+			 				free_upage(pagedes->paddr);
+						}
+						lock_release(pagedes->pt_lock);
+				  } else {
+						lock_release(pagedes->pt_lock);
+						lock_acquire(bitmap_lock);
 						bitmap_unmark(swapTable,(unsigned) pagedes->bitmapIndex);
-					//}
-					lock_release(bitmap_lock);
-					//lock_release(pagedes->pt_lock);
-				}
-				//lock_release(pagedes->pt_lock);
-		 		//kprintf("\nPADDR : %d\n",pagedes->paddr);
+						lock_release(bitmap_lock);
+					}
+
 
 				pagedes = pagedes->next;
 			}
@@ -279,15 +283,19 @@ as_destroy(struct addrspace *as)
 	 while(as->first_page!=NULL)
 	 {
 	 	pagedes = as->first_page;
-		//struct lock *temp_lock = pagedes->pt_lock;
-		//lock_acquire(temp_lock);
-		lock_destroy(pagedes->pt_lock);
-		//lock_release(temp_lock);
-
-		as->first_page = as->first_page->next;
-		kfree(pagedes);
-
-	 }
+		if(pagedes->mem_or_disk == IN_MEMORY){
+			int index = pagedes->paddr/PAGE_SIZE;
+			if(coremap[index].state != DESTORY){
+				lock_destroy(pagedes->pt_lock);
+				as->first_page = as->first_page->next;
+				kfree(pagedes);
+			 }
+		} else {
+			lock_destroy(pagedes->pt_lock);
+			as->first_page = as->first_page->next;
+			kfree(pagedes);
+		}
+	}
 
 	kfree(as);
 }
