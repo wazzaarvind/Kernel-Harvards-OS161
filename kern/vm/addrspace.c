@@ -260,11 +260,11 @@ as_destroy(struct addrspace *as)
 			  } else {
 					lock_release(pagedes->pt_lock);
 					lock_acquire(bitmap_lock);
-					if(bitmap_isset(swapTable,(unsigned) pagedes->bitmapIndex) == true)
-					{
+					//if(bitmap_isset(swapTable,(unsigned) pagedes->bitmapIndex) == true)
+					//{
 						//kprintf("\nInside bitmap %d", pagedes->bitmapIndex);
 						bitmap_unmark(swapTable,(unsigned) pagedes->bitmapIndex);
-					}
+					//}
 					lock_release(bitmap_lock);
 					//lock_release(pagedes->pt_lock);
 				}

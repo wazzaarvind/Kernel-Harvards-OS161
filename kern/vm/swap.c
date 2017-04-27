@@ -21,6 +21,7 @@
 
 int evict_page(void){
   //kprintf("\nevict");
+  //Lame
 
   int found = -1;
   int i = swapStart;
@@ -48,6 +49,8 @@ void swap_out(struct page_table *store){
 
     struct page_table *temp = store;
 
+    int temp_index = temp->bitmapIndex;
+
     unsigned int ind = 0;
 
     lock_acquire(bitmap_lock);
@@ -57,6 +60,14 @@ void swap_out(struct page_table *store){
     if(check != 0){
       kprintf("\nInside bitmap %d", ind);
     }
+
+    temp->bitmapIndex = ind;
+
+    //if(bitmap_isset(swapTable,(unsigned)temp_index) == true)
+    if(temp_index>0)
+       bitmap_unmark(swapTable,(unsigned)temp_index);
+
+
 
     lock_release(bitmap_lock);
 
@@ -74,7 +85,7 @@ void swap_out(struct page_table *store){
 
     // Synchronization required!!
     temp->mem_or_disk = IN_DISK; // Change mem to disk
-    temp->bitmapIndex = ind;
+    
 
 
     // Move the contents to disk.
@@ -134,12 +145,12 @@ void swap_in(struct page_table *first){
 
   lock_acquire(bitmap_lock);
 
-  if(bitmap_isset(swapTable,(unsigned)index) == true)
-  {
+  //if(bitmap_isset(swapTable,(unsigned)index) == true)
+  //{
     //kprintf("\nInside bitmap swap_in %d",bitmap_isset(swapTable,index));
     bitmap_unmark(swapTable,(unsigned)index);
     //kprintf("\nInside bitmap swap_in second%d",bitmap_isset(swapTable,index));
-  }
+  //}
   lock_release(bitmap_lock);
 
 }
