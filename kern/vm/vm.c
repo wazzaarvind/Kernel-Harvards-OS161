@@ -369,8 +369,6 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
          			kfree(coremap[index].page);
          		 }
 
-             coremap[index].state = RECENTLY_USED;
-             coremap[index].page = first;
 
           }
 
@@ -398,6 +396,10 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
             tlb_write(ehi, elo, i);
              //kprintf("\nFails3\n");
             splx(spl);
+            int index = 0;
+            index = first->paddr/PAGE_SIZE;
+            coremap[index].page = first;
+            coremap[index].state = RECENTLY_USED;
             if(swap_or_not == SWAP_ENABLED)
               lock_release(first->pt_lock);
             return 0;
@@ -409,6 +411,10 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
         elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
         tlb_random(ehi, elo);
         splx(spl);
+        int index = 0;
+        index = first->paddr/PAGE_SIZE;
+        coremap[index].page = first;
+        coremap[index].state = RECENTLY_USED;
         if(swap_or_not == SWAP_ENABLED)
           lock_release(first->pt_lock);
         return 0;
@@ -438,13 +444,10 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
       index = cur_page->paddr/PAGE_SIZE;
 
       if(coremap[index].state == DESTORY){
-        lock_release(coremap[index].page->pt_lock); 
+        lock_release(coremap[index].page->pt_lock);
   			lock_destroy(coremap[index].page->pt_lock);
   			kfree(coremap[index].page);
   		}
-
-      coremap[index].state = RECENTLY_USED;
-      coremap[index].page = cur_page;
 
       cur_page->mem_or_disk = IN_MEMORY;
       cur_page->bitmapIndex = -1;
@@ -480,6 +483,8 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
           DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
           tlb_write(ehi, elo, i);
           splx(spl);
+          coremap[index].page = cur_page;
+          coremap[index].state = RECENTLY_USED;
           return 0;
       }
 
@@ -487,6 +492,8 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
       elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
       tlb_random(ehi, elo);
       splx(spl);
+      coremap[index].page = cur_page;
+      coremap[index].state = RECENTLY_USED;
       return 0;
 
       // TLB is currently full so evicting a TLB entry

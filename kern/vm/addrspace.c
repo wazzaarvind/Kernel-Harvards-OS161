@@ -155,12 +155,6 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 
 		newPte->pt_lock = lock_create("Pte lock");
 
-		if(swap_or_not == SWAP_ENABLED)
-		{
-			lock_acquire(newPte->pt_lock);
-
-			lock_acquire(oldPte->pt_lock);
-		}
 
 		newPte->paddr = alloc_upages();
 
@@ -177,13 +171,16 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 			kfree(coremap[index].page);
 		}
 
-		coremap[index].state = RECENTLY_USED;
-		coremap[index].page = newPte;
-
-
 		newPte->vaddr = oldPte->vaddr;
 		newPte->mem_or_disk = oldPte->mem_or_disk;
 		newPte->next = NULL;
+
+		if(swap_or_not == SWAP_ENABLED)
+		{
+			//lock_acquire(newPte->pt_lock);
+			lock_acquire(oldPte->pt_lock);
+		}
+
 
 		if(oldPte->mem_or_disk == IN_DISK)
 		{
@@ -196,6 +193,14 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 			memmove((void *)(MIPS_KSEG0+newPte->paddr),(const void *)(MIPS_KSEG0+oldPte->paddr),PAGE_SIZE);
 		}
 
+		if(swap_or_not == SWAP_ENABLED)
+		{
+			//lock_release(newPte->pt_lock);
+			lock_release(oldPte->pt_lock);
+		}
+
+		coremap[index].page = newPte;
+		coremap[index].state = RECENTLY_USED;
 
 		if(newas->last_page == NULL){
 			newas->last_page = newPte;
@@ -205,11 +210,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 			newas->last_page = newas->last_page->next;
 		}
 
-		if(swap_or_not == SWAP_ENABLED)
-		{
-			lock_release(newPte->pt_lock);
-			lock_release(oldPte->pt_lock);
-		}
+
 
 		// Now copy over the contents of the memory
 
