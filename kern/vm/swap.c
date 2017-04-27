@@ -46,25 +46,28 @@ int evict_page(void){
 
 void swap_out(int i, struct page_table *store){
   //kprintf("\nSwapOut")
-  unsigned int ind = 0;
-  lock_acquire(bitmap_lock);
-  int check = bitmap_alloc(swapTable, &ind);
-  //kprintf("\nBitmap fail\n%d,%d",bitmap_isset(swapTable,(unsigned)8191),bitmap_isset(swapTable,(unsigned)8190));
-  if(check != 0){
-    // TODO : Handle edge case.
-    //kprintf("\nBitmap fail\n%d,%d",bitmap_isset(swapTable,(unsigned)8191),bitmap_isset(swapTable,(unsigned)8190));
-  }
-    //kprintf("\nInside bitmap %d", ind);
-  lock_release(bitmap_lock);
 
   struct page_table *temp = store; // First page of process owning this cormap page.
         // page align faultaddress and find coresponding page in the PTE.
     while(temp != NULL){
 
-      lock_acquire(temp->pt_lock);
+      
 
       if(temp->paddr == (unsigned int)(i * PAGE_SIZE))  //does this necessarily need to be the case? Will it never be in between?
       {
+
+          unsigned int ind = 0;
+          lock_acquire(bitmap_lock);
+          int check = bitmap_alloc(swapTable, &ind);
+          //kprintf("\nBitmap fail\n%d,%d",bitmap_isset(swapTable,(unsigned)8191),bitmap_isset(swapTable,(unsigned)8190));
+          if(check != 0){
+          // TODO : Handle edge case.
+          //kprintf("\nBitmap fail\n%d,%d",bitmap_isset(swapTable,(unsigned)8191),bitmap_isset(swapTable,(unsigned)8190));
+          }
+          //kprintf("\nInside bitmap %d", ind);
+          lock_release(bitmap_lock);
+
+        lock_acquire(temp->pt_lock);
         int spl = 0;
 
         spl = splhigh();
@@ -111,7 +114,7 @@ void swap_out(int i, struct page_table *store){
         break;
       }
 
-      lock_release(temp->pt_lock);
+      //lock_release(temp->pt_lock);
       temp = temp->next;
 
     }

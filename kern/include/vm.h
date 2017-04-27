@@ -55,6 +55,7 @@ struct coremap_struct
 	int chunk_size;
 	int state;
 	struct page_table *first;
+	struct page_table *page;
 	//paddr_t start;
 
 };
