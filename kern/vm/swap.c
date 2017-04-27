@@ -22,7 +22,6 @@
 int evict_page(void){
   //kprintf("\nevict");
 
-
   int found = -1;
   int i = swapStart;
   int end = swapStart - 1;
@@ -44,80 +43,67 @@ int evict_page(void){
   return found;
 }
 
-void swap_out(int i, struct page_table *store){
+void swap_out(struct page_table *store){
   //kprintf("\nSwapOut")
 
-  struct page_table *temp = store; // First page of process owning this cormap page.
-        // page align faultaddress and find coresponding page in the PTE.
-    while(temp != NULL){
+    struct page_table *temp = store;
 
-      
+    unsigned int ind = 0;
 
-      if(temp->paddr == (unsigned int)(i * PAGE_SIZE))  //does this necessarily need to be the case? Will it never be in between?
-      {
+    lock_acquire(bitmap_lock);
 
-          unsigned int ind = 0;
-          lock_acquire(bitmap_lock);
-          int check = bitmap_alloc(swapTable, &ind);
-          //kprintf("\nBitmap fail\n%d,%d",bitmap_isset(swapTable,(unsigned)8191),bitmap_isset(swapTable,(unsigned)8190));
-          if(check != 0){
-          // TODO : Handle edge case.
-          //kprintf("\nBitmap fail\n%d,%d",bitmap_isset(swapTable,(unsigned)8191),bitmap_isset(swapTable,(unsigned)8190));
-          }
-          //kprintf("\nInside bitmap %d", ind);
-          lock_release(bitmap_lock);
+    int check = bitmap_alloc(swapTable, &ind);
 
-        lock_acquire(temp->pt_lock);
-        int spl = 0;
-
-        spl = splhigh();
-        int index = tlb_probe(temp->vaddr, 0);
-        if(index > 0)
-        {
-            tlb_write(TLBHI_INVALID(index), TLBLO_INVALID(), index);
-        }
-        splx(spl);
-
-
-
-        // Synchronization required!!
-        temp->mem_or_disk = IN_DISK; // Change mem to disk
-        temp->bitmapIndex = ind;
-
-
-
-        // Move the contents to disk.
-        struct uio uioWrite;
-        struct iovec iov;
-
-        iov.iov_kbase = (void *)PADDR_TO_KVADDR(temp->paddr);
-        iov.iov_len = PAGE_SIZE;
-
-        uioWrite.uio_iov = &iov;
-        uioWrite.uio_iovcnt = 1;
-        uioWrite.uio_offset = temp->bitmapIndex * PAGE_SIZE;
-        uioWrite.uio_resid = PAGE_SIZE;
-        uioWrite.uio_segflg = UIO_SYSSPACE;
-        uioWrite.uio_rw = UIO_WRITE;
-        uioWrite.uio_space = NULL;
-        //kprintf("\nSwapOutmid");
-
-        int check2 = VOP_WRITE(swap_vnode, &uioWrite);
-
-        if(check2){
-
-          kprintf("\nVOP_WRITE fail\n");
-        }
-
-        temp->paddr = -1;
-        lock_release(temp->pt_lock);
-        break;
-      }
-
-      //lock_release(temp->pt_lock);
-      temp = temp->next;
-
+    if(check != 0){
+      kprintf("\nInside bitmap %d", ind);
     }
+
+    lock_release(bitmap_lock);
+
+    lock_acquire(temp->pt_lock);
+
+    int spl = 0;
+
+    spl = splhigh();
+    int index = tlb_probe(temp->vaddr, 0);
+    if(index > 0)
+    {
+        tlb_write(TLBHI_INVALID(index), TLBLO_INVALID(), index);
+    }
+    splx(spl);
+
+    // Synchronization required!!
+    temp->mem_or_disk = IN_DISK; // Change mem to disk
+    temp->bitmapIndex = ind;
+
+
+    // Move the contents to disk.
+    struct uio uioWrite;
+    struct iovec iov;
+
+    iov.iov_kbase = (void *)PADDR_TO_KVADDR(temp->paddr);
+    iov.iov_len = PAGE_SIZE;
+
+    uioWrite.uio_iov = &iov;
+    uioWrite.uio_iovcnt = 1;
+    uioWrite.uio_offset = temp->bitmapIndex * PAGE_SIZE;
+    uioWrite.uio_resid = PAGE_SIZE;
+    uioWrite.uio_segflg = UIO_SYSSPACE;
+    uioWrite.uio_rw = UIO_WRITE;
+    uioWrite.uio_space = NULL;
+    //kprintf("\nSwapOutmid");
+
+    int check2 = VOP_WRITE(swap_vnode, &uioWrite);
+
+    if(check2){
+
+      kprintf("\nVOP_WRITE fail\n");
+    }
+
+    temp->paddr = -1;
+
+
+    lock_release(temp->pt_lock);
 
 }
 

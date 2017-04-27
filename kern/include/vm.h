@@ -97,7 +97,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress);
 void free_upage(vaddr_t addr);
 
 // Swap functions
-void swap_out(int i, struct page_table*);
+void swap_out(struct page_table*);
 void swap_in(struct page_table*);
 void swap_in_disk(struct page_table*);
 

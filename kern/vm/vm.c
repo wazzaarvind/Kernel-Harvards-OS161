@@ -65,7 +65,6 @@ void vm_initialise() {
     //coremap[j].available = 1;
     coremap[j].chunk_size = 0;
     coremap[j].state = FREE;
-    coremap[j].first = NULL;
     coremap[j].page = NULL;
 
   }
@@ -121,7 +120,6 @@ vaddr_t alloc_kpages(unsigned npages)
         spinlock_release(&vmlock);
         return (vaddr_t) NULL;
       }
-      store = coremap[i].first;
       store = coremap[i].page;
       flag = 1;
     }
@@ -143,7 +141,6 @@ vaddr_t alloc_kpages(unsigned npages)
     coremap[i].chunk_size = (int) npages;
     coremap[i].state = FIXED;
     // Kpage doesn't need a PTE.
-    coremap[i].first = NULL;
     coremap[i].page = NULL;
     i++;
   }
@@ -152,7 +149,7 @@ vaddr_t alloc_kpages(unsigned npages)
 
   if(flag == 1) {
     //lock_acquire(store->pt_lock);
-    swap_out(startAlloc, store);
+    swap_out(store);
     //lock_release(store->pt_lock);
     flag = 0;
   }
@@ -354,7 +351,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
           if(first->mem_or_disk == IN_DISK){
 
              first->paddr = alloc_upages();
-             
+
 
              if(first->paddr == 0){
                return ENOMEM;
@@ -424,7 +421,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
 
       cur_page->vaddr = faultaddress;
       cur_page->paddr = alloc_upages(); //page aligned address?
-      
+
       //kprintf("\n Here 0?\n");
 
       if(cur_page->paddr == 0){
@@ -447,10 +444,6 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
       //kprintf("\nNew PTE is %d",cur_page->vaddr);
 
       if(curproc->p_addrspace->last_page == NULL){
-        int index = 0;
-        index = cur_page->paddr/PAGE_SIZE;
-        coremap[index].first = cur_page;
-        coremap[index].page = cur_page;
         curproc->p_addrspace->last_page = cur_page;
         curproc->p_addrspace->first_page = cur_page;
       } else {
@@ -538,7 +531,6 @@ vaddr_t alloc_upages(void){
         spinlock_release(&vmlock);
         return (vaddr_t) NULL;
       }
-      store = coremap[i].first;
       store = coremap[i].page;
       flag = 1;
     }
@@ -557,8 +549,6 @@ vaddr_t alloc_upages(void){
     req--;
     coremap[i].chunk_size = npages;
     coremap[i].state = VICTIM;
-    coremap[i].first = curproc->p_addrspace->first_page;
-    //coremap[i].page = 
     i++;
   }
 
@@ -566,7 +556,7 @@ vaddr_t alloc_upages(void){
 
   if(flag == 1){
 
-    swap_out(startAlloc, store);
+    swap_out(store);
     flag = 0;
   }
 
@@ -582,18 +572,7 @@ void free_upage(paddr_t addr)
   //kprintf("\nfreeu");
 
   int i = 0;
-  //lock_acquire(first->pt_lock);
-  // if(index!=-1 && swap_or_not == SWAP_ENABLED)
-  // {
-  //
-  //   lock_acquire(bitmap_lock);
-  //   if(bitmap_isset(swapTable,(unsigned)index) == true)
-  //   {
-  //     kprintf("\nInside bitmap %d",index);
-  //     bitmap_unmark(swapTable,(unsigned)index);
-  //   }
-  //   lock_release(bitmap_lock);
-  // }
+
   spinlock_acquire(&vmlock);
 
   i = addr/PAGE_SIZE;
@@ -607,7 +586,6 @@ void free_upage(paddr_t addr)
   numBytes -= PAGE_SIZE;
   coremap[i].chunk_size = 0;
   coremap[i].state = FREE;
-  coremap[i].first = NULL;
   coremap[i].page = NULL;
 
   spinlock_release(&vmlock);
