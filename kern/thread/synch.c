@@ -137,7 +137,7 @@ V(struct semaphore *sem)
 
 ////////////////////////////////////////////////////////////
 //
-// Lock.
+// Lock : Finally done.
 
 struct lock *
 lock_create(const char *name)
@@ -424,7 +424,7 @@ rwlock_acquire_read(struct rwlock *rw_lock)
 
 	//lock_release(rw_lock->rwlock);
 	//rw_lock->readCount++;
-	
+
 }
 
 void
