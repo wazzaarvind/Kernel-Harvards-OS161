@@ -185,3 +185,31 @@ void swap_in_disk(struct page_table *first){
   first->bitmapIndex = -1;
 
 }
+
+void updateTLB(vaddr_t faultaddress, paddr_t paddr){
+
+  int spl = 0;
+  uint32_t ehi,elo;
+
+  spl = splhigh();
+
+  // if(tlbStart < NUM_TLB){
+  //   for (int i=0; i<NUM_TLB; i++) {
+  //       tlb_read(&ehi, &elo, i);
+  //       if (elo & TLBLO_VALID) {
+  //           continue;
+  //         }
+  //       ehi = faultaddress;
+  //       elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+  //       DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
+  //       tlb_write(ehi, elo, i);
+  //       splx(spl);
+  //       return;
+  //   }
+  // }
+  ehi = faultaddress;
+  elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+  tlb_write(ehi, elo, tlbStart%NUM_TLB);
+  splx(spl);
+  tlbStart++;
+}

@@ -35,6 +35,8 @@ void vm_initialise() {
   size = ram_getsize();
   tpages = size/PAGE_SIZE;
 
+  freePages = tpages;
+
   // Check how much is used by Kernel + Exception handler
   paddr_t f_paddr = ram_getfirstfree();
 
@@ -84,25 +86,26 @@ vaddr_t alloc_kpages(unsigned npages)
 
   int i = 0, startAlloc = 0;
 
-
-  for(i = 0; i < (int) tpages; i++){
-    if(coremap[i].state == FREE){
-      for(int j = i;  j <  i + (int) npages; j++){
-        if(coremap[j].state == FREE){
-          alloc +=1;
-        } else {
-          break;
-        }
-        if(alloc == req){
-          break;
+  if(freePages != 0) {
+    for(i = 0; i < (int) tpages; i++){
+      if(coremap[i].state == FREE){
+        for(int j = i;  j <  i + (int) npages; j++){
+          if(coremap[j].state == FREE){
+            alloc +=1;
+          } else {
+            break;
+          }
+          if(alloc == req){
+            break;
+          }
         }
       }
-    }
 
-    if(alloc == req){
-      break;
-    } else {
-      alloc = 0;
+      if(alloc == req){
+        break;
+      } else {
+        alloc = 0;
+      }
     }
   }
 
@@ -138,6 +141,7 @@ vaddr_t alloc_kpages(unsigned npages)
   while(req > 0){
     req--;
     //coremap[i].available = 0;
+    freePages--;
     coremap[i].chunk_size = (int) npages;
     coremap[i].state = FIXED;
     // Kpage doesn't need a PTE.
@@ -191,6 +195,7 @@ void free_kpages(vaddr_t addr)
 
   while (pagesToInvalidate > 0) {
     //coremap[i].available = 1;
+    freePages++;
     coremap[i].chunk_size = 0;
     coremap[i].state = FREE;
     i++;
@@ -233,6 +238,7 @@ void vm_bootstrap(void)
     bitmap_lock = lock_create("Bitmap lock");
 
     swapStart = 0;
+    tlbStart = 0;
 
     swap_or_not = SWAP_ENABLED;
     //kprintf("\nHi2");
@@ -246,8 +252,8 @@ void vm_bootstrap(void)
 int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no index in linked list
 {
 
-    int spl = 0;
-    uint32_t ehi,elo;
+    // int spl = 0;
+    // uint32_t ehi,elo;
 
     (void) faulttype;
 
@@ -378,38 +384,40 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
 
         paddr_t paddr = first->paddr;
 
-
-        spl = splhigh();
-
-        for (int i=0; i<NUM_TLB; i++) {
-          //kprintf("\nFails2?\n");
-            tlb_read(&ehi, &elo, i);
-            if (elo & TLBLO_VALID) {
-                continue;
-              }
-            ehi = faultaddress;
-            elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+        updateTLB(faultaddress, paddr);
 
 
-            DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
-            tlb_write(ehi, elo, i);
-             //kprintf("\nFails3\n");
-            splx(spl);
-            int index = 0;
-            index = first->paddr/PAGE_SIZE;
-            coremap[index].page = first;
-            coremap[index].state = RECENTLY_USED;
-            if(swap_or_not == SWAP_ENABLED)
-              lock_release(first->pt_lock);
-            return 0;
-        }
-
-
-        // TLB is currently full so evicting a TLB entry
-        ehi = faultaddress;
-        elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-        tlb_random(ehi, elo);
-        splx(spl);
+        // spl = splhigh();
+        //
+        // for (int i=0; i<NUM_TLB; i++) {
+        //   //kprintf("\nFails2?\n");
+        //     tlb_read(&ehi, &elo, i);
+        //     if (elo & TLBLO_VALID) {
+        //         continue;
+        //       }
+        //     ehi = faultaddress;
+        //     elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+        //
+        //
+        //     DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
+        //     tlb_write(ehi, elo, i);
+        //      //kprintf("\nFails3\n");
+        //     splx(spl);
+        //     int index = 0;
+        //     index = first->paddr/PAGE_SIZE;
+        //     coremap[index].page = first;
+        //     coremap[index].state = RECENTLY_USED;
+        //     if(swap_or_not == SWAP_ENABLED)
+        //       lock_release(first->pt_lock);
+        //     return 0;
+        // }
+        //
+        //
+        // // TLB is currently full so evicting a TLB entry
+        // ehi = faultaddress;
+        // elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+        // tlb_random(ehi, elo);
+        // splx(spl);
         int index = 0;
         index = first->paddr/PAGE_SIZE;
         coremap[index].page = first;
@@ -468,29 +476,31 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
 
       paddr_t paddr = cur_page->paddr;
 
+      updateTLB(faultaddress, paddr);
+
       // Fill up the TLB.
       // Load TLB and return.
-      spl = splhigh();
-
-      for (int i=0; i<NUM_TLB; i++) {
-          tlb_read(&ehi, &elo, i);
-          if (elo & TLBLO_VALID) {
-              continue;
-            }
-          ehi = faultaddress;
-          elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-          DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
-          tlb_write(ehi, elo, i);
-          splx(spl);
-          coremap[index].page = cur_page;
-          coremap[index].state = RECENTLY_USED;
-          return 0;
-      }
-
-      ehi = faultaddress;
-      elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-      tlb_random(ehi, elo);
-      splx(spl);
+      // spl = splhigh();
+      //
+      // for (int i=0; i<NUM_TLB; i++) {
+      //     tlb_read(&ehi, &elo, i);
+      //     if (elo & TLBLO_VALID) {
+      //         continue;
+      //       }
+      //     ehi = faultaddress;
+      //     elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+      //     DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
+      //     tlb_write(ehi, elo, i);
+      //     splx(spl);
+      //     coremap[index].page = cur_page;
+      //     coremap[index].state = RECENTLY_USED;
+      //     return 0;
+      // }
+      //
+      // ehi = faultaddress;
+      // elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+      // tlb_random(ehi, elo);
+      // splx(spl);
       coremap[index].page = cur_page;
       coremap[index].state = RECENTLY_USED;
       return 0;
@@ -519,27 +529,29 @@ vaddr_t alloc_upages(void){
   int i = 0, startAlloc = 0;
 
   spinlock_acquire(&vmlock);
-
-  for(i = 0; i < (int) tpages; i++){
-    if(coremap[i].state == FREE){
-      for(int j = i;  j <  i + (int) npages; j++){
-        if(coremap[j].state == FREE){
-          alloc +=1;
-        } else {
-          break;
-        }
-        if(alloc == req){
-          break;
+  if(freePages != 0) {
+    for(i = 0; i < (int) tpages; i++){
+      if(coremap[i].state == FREE){
+        for(int j = i;  j <  i + (int) npages; j++){
+          if(coremap[j].state == FREE){
+            alloc +=1;
+          } else {
+            break;
+          }
+          if(alloc == req){
+            break;
+          }
         }
       }
-    }
 
-    if(alloc == req){
-      break;
-    } else {
-      alloc = 0;
+      if(alloc == req){
+        break;
+      } else {
+        alloc = 0;
+      }
     }
   }
+
   int flag = 0;
   struct page_table *store;
 
@@ -566,6 +578,7 @@ vaddr_t alloc_upages(void){
 
   while(req > 0){
     req--;
+    freePages--;
     coremap[i].chunk_size = npages;
     coremap[i].state = VICTIM;
     i++;
@@ -602,7 +615,7 @@ void free_upage(paddr_t addr)
     return;
   }
 
-
+  freePages++;
   numBytes -= PAGE_SIZE;
   coremap[i].chunk_size = 0;
   coremap[i].state = FREE;

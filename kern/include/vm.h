@@ -69,10 +69,13 @@ struct spinlock vmlock;
 // Swap variables
 int tpages;
 int swapStart;
+int tlbStart;
 int swap_or_not;
 struct lock *bitmap_lock;
 struct bitmap *swapTable;
 struct vnode *swap_vnode;
+
+int freePages;
 
 
 #include <machine/vm.h>
@@ -118,5 +121,7 @@ void vm_tlbshootdown(const struct tlbshootdown *);
 
 vaddr_t alloc_upages(void);
 int evict_page(void);
+
+void updateTLB(vaddr_t faultaddress, paddr_t paddr);
 
 #endif /* _VM_H_ */
