@@ -352,7 +352,6 @@ int vm_fault(int faulttype, vaddr_t faultaddress) // we cannot return int, no in
 
              first->paddr = alloc_upages();
 
-
              if(first->paddr == 0){
                return ENOMEM;
              }

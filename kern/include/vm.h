@@ -35,6 +35,7 @@
 #define RECENTLY_USED 3
 #define DESTORY 4
 #define VICTIM 5
+#define NOT_RECENTLY_USED 6
 
 #define IN_MEMORY 1
 #define IN_DISK 2

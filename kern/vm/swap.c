@@ -25,19 +25,23 @@ int evict_page(void){
 
   int found = -1;
   int i = swapStart;
-  int end = swapStart - 1;
+  //int end = swapStart - 1;
 
-  if(swapStart == 0)
-    end = tpages-1;
+  // if(swapStart == 0)
+  //   end = tpages-1;
 
-  while(i != end){
+  while(1){
     if(i == tpages-1){
       i = 0;
     }
-    if(coremap[i].state == RECENTLY_USED){ // Change for LRU.
+    if(coremap[i].state == NOT_RECENTLY_USED){ // Change for LRU.
       found = i;
       swapStart = found + 1;
       break;
+    }
+
+    if(coremap[i].state == RECENTLY_USED){
+      coremap[i].state = NOT_RECENTLY_USED;
     }
     i++;
   }
@@ -85,7 +89,7 @@ void swap_out(struct page_table *store){
 
     // Synchronization required!!
     temp->mem_or_disk = IN_DISK; // Change mem to disk
-    
+
 
 
     // Move the contents to disk.
